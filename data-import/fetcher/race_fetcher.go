@@ -1,0 +1,32 @@
+package fetcher
+
+import (
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+var _ = log.Print
+
+type RaceFetcher struct {
+}
+
+func (c *RaceFetcher) GetRawResults(url string) ([]byte, error) {
+
+	log.Println(url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
