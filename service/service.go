@@ -6,10 +6,11 @@ import (
 	"github.com/chiefwhitecloud/running-man/data-import/fetcher"
 	"github.com/chiefwhitecloud/running-man/database"
 	"github.com/chiefwhitecloud/running-man/feed"
+	"github.com/chiefwhitecloud/running-man/ui"
 	"github.com/gorilla/mux"
-
 	"log"
 	"net/http"
+	"os"
 )
 
 var _ = log.Printf
@@ -59,6 +60,12 @@ func (s *RunningManService) Run() error {
 		Db: s.Db,
 	}
 
+	cwd, _ := os.Getwd()
+
+	ui := &ui.UI{
+		BaseDir: cwd,
+	}
+
 	// route handlers
 	r := mux.NewRouter()
 
@@ -68,6 +75,7 @@ func (s *RunningManService) Run() error {
 	r.HandleFunc("/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
 	r.HandleFunc("/racer/{id}", feeds.GetRacer).Methods("GET")
 	r.HandleFunc("/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
+	r.HandleFunc("/", ui.GetDefaultTemplate).Methods("GET")
 
 	http.Handle("/", r)
 
