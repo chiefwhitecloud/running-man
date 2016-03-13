@@ -169,6 +169,19 @@ func (r *FeedResource) formatRacerForFeed(racer database.Racer) api.Racer {
 
 func (r *FeedResource) formatRaceResultsForFeed(raceresults []database.RaceResult, racers []database.Racer, races []database.Race) api.RaceResults {
 
+	ageMap := map[int]string{
+		1:  "U20",
+		2:  "20-29",
+		3:  "30-39",
+		4:  "40-49",
+		5:  "50-59",
+		6:  "60-69",
+		7:  "70-79",
+		8:  "80-89",
+		9:  "90-99",
+		10: "100-109",
+	}
+
 	mapRacers := map[string]api.Racer{}
 	for i := range racers {
 		mapRacers[strconv.Itoa(racers[i].ID)] = r.formatRacerForFeed(racers[i])
@@ -189,6 +202,7 @@ func (r *FeedResource) formatRaceResultsForFeed(raceresults []database.RaceResul
 			RaceID:              strconv.Itoa(raceresults[i].RaceID),
 			BibNumber:           raceresults[i].BibNumber,
 			Time:                raceresults[i].Time,
+			AgeCategory:         ageMap[raceresults[i].AgeCategoryID],
 		}
 	}
 
