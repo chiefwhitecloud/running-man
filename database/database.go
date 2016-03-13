@@ -28,13 +28,22 @@ type Race struct {
 }
 
 type RaceResult struct {
-	ID        int
-	Position  int
-	RaceID    int `sql:"index"`
-	RacerID   int `sql:"index"`
-	BibNumber string
-	Racer     Racer
-	Race      Race
+	ID                  int
+	Position            int
+	SexPosition         int
+	AgeCategoryPosition int
+	RaceID              int `sql:"index"`
+	RacerID             int `sql:"index"`
+	AgeCategoryID       int `sql:"index"`
+	BibNumber           string
+	Time                string
+	Racer               Racer
+	Race                Race
+}
+
+type AgeCategory struct {
+	ID   int
+	Name string
 }
 
 type raceResultForTransform struct {
@@ -44,15 +53,24 @@ type raceResultForTransform struct {
 }
 
 func (db *Db) Migrate() {
-	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{})
+	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
+
+	cats := []string{"U20", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99", "100-109"}
+
+	for i := 0; i < len(cats); i++ {
+		cat := AgeCategory{Name: cats[i]}
+		db.orm.Create(&cat)
+	}
+
 }
 
 func (db *Db) Create() {
-	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{})
+	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
+
 }
 
 func (db *Db) DropAllTables() {
-	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{})
+	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
 }
 
 func (db *Db) Open() error {
@@ -69,6 +87,10 @@ func (db *Db) Open() error {
 }
 
 func (db *Db) SaveRace(r *model.RaceDetails) error {
+
+	cats := []AgeCategory{}
+
+	db.orm.Find(&cats)
 
 	race := Race{Name: r.Name,
 		Year:  r.Year,
@@ -93,11 +115,23 @@ func (db *Db) SaveRace(r *model.RaceDetails) error {
 			db.orm.Create(&racer)
 		}
 
+		//find the agecategory id.
+		catId := 0
+		for i := range cats {
+			if cats[i].Name == mRacer.AgeCategory {
+				catId = cats[i].ID
+			}
+		}
+
 		result := RaceResult{
-			RaceID:    race.ID,
-			RacerID:   racer.ID,
-			Position:  mRacer.Position,
-			BibNumber: mRacer.BibNumber,
+			RaceID:              race.ID,
+			RacerID:             racer.ID,
+			Position:            mRacer.Position,
+			BibNumber:           mRacer.BibNumber,
+			SexPosition:         mRacer.SexPosition,
+			AgeCategoryPosition: mRacer.AgeCategoryPosition,
+			AgeCategoryID:       catId,
+			Time:                mRacer.Time,
 		}
 
 		db.orm.Create(&result)
@@ -135,20 +169,23 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 
 	db.orm.Find(&r, raceid)
 
-	rows, err := db.orm.Table("race_result").Select("race_result.position, race_result.bib_number, racer.first_name, racer.last_name, racer.id, race_result.id, racer.sex").Joins("join racer on race_result.racer_id = racer.id").Where("race_result.race_id = ?", r.ID).Rows()
+	rows, err := db.orm.Table("race_result").Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, racer.first_name, racer.last_name, racer.id, race_result.id, racer.sex").Joins("join racer on race_result.racer_id = racer.id").Where("race_result.race_id = ?", r.ID).Rows()
 
 	if err != nil {
 		log.Println(err)
 	}
 
 	var (
-		position     int
-		bibnumber    string
-		firstname    string
-		lastname     string
-		racerid      int
-		raceresultid int
-		sex          string
+		time                string
+		position            int
+		sexposition         int
+		agecategoryposition int
+		bibnumber           string
+		firstname           string
+		lastname            string
+		racerid             int
+		raceresultid        int
+		sex                 string
 	)
 
 	var results []RaceResult
@@ -157,17 +194,20 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 	races = append(races, r)
 
 	for rows.Next() {
-		err := rows.Scan(&position, &bibnumber, &firstname, &lastname, &racerid, &raceresultid, &sex)
+		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &firstname, &lastname, &racerid, &raceresultid, &sex)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		xx := RaceResult{
-			ID:        raceresultid,
-			Position:  position,
-			RaceID:    r.ID,
-			RacerID:   racerid,
-			BibNumber: bibnumber,
+			ID:                  raceresultid,
+			Time:                time,
+			Position:            position,
+			SexPosition:         sexposition,
+			AgeCategoryPosition: agecategoryposition,
+			RaceID:              r.ID,
+			RacerID:             racerid,
+			BibNumber:           bibnumber,
 		}
 
 		results = append(results, xx)
@@ -193,21 +233,24 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 
 	db.orm.Find(&r, racerid)
 
-	rows, err := db.orm.Table("race_result").Select("race_result.position, race_result.bib_number, race.name,  race.id, race_result.id, race.year, race.month, race.day").Joins("join race on race_result.race_id = race.id").Where("race_result.racer_id = ?", r.ID).Rows()
+	rows, err := db.orm.Table("race_result").Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race.name,  race.id, race_result.id, race.year, race.month, race.day").Joins("join race on race_result.race_id = race.id").Where("race_result.racer_id = ?", r.ID).Rows()
 
 	if err != nil {
 		log.Println(err)
 	}
 
 	var (
-		position     int
-		bibnumber    string
-		name         string
-		raceid       int
-		raceresultid int
-		year         int
-		month        int
-		day          int
+		time                string
+		position            int
+		sexposition         int
+		agecategoryposition int
+		bibnumber           string
+		name                string
+		raceid              int
+		raceresultid        int
+		year                int
+		month               int
+		day                 int
 	)
 
 	var results []RaceResult
@@ -217,17 +260,20 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	racers = append(racers, r)
 
 	for rows.Next() {
-		err := rows.Scan(&position, &bibnumber, &name, &raceid, &raceresultid, &year, &month, &day)
+		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &name, &raceid, &raceresultid, &year, &month, &day)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		xx := RaceResult{
-			ID:        raceresultid,
-			Position:  position,
-			RaceID:    raceid,
-			RacerID:   r.ID,
-			BibNumber: bibnumber,
+			ID:                  raceresultid,
+			Time:                time,
+			Position:            position,
+			SexPosition:         sexposition,
+			AgeCategoryPosition: agecategoryposition,
+			RaceID:              raceid,
+			RacerID:             r.ID,
+			BibNumber:           bibnumber,
 		}
 
 		results = append(results, xx)

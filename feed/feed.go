@@ -182,10 +182,13 @@ func (r *FeedResource) formatRaceResultsForFeed(raceresults []database.RaceResul
 	rr := make([]api.RaceResult, len(raceresults))
 	for i := range raceresults {
 		rr[i] = api.RaceResult{
-			Position:  raceresults[i].Position,
-			RacerID:   raceresults[i].RacerID,
-			RaceID:    raceresults[i].RaceID,
-			BibNumber: raceresults[i].BibNumber,
+			Position:            raceresults[i].Position,
+			SexPosition:         raceresults[i].SexPosition,
+			AgeCategoryPosition: raceresults[i].AgeCategoryPosition,
+			RacerID:             strconv.Itoa(raceresults[i].RacerID),
+			RaceID:              strconv.Itoa(raceresults[i].RaceID),
+			BibNumber:           raceresults[i].BibNumber,
+			Time:                raceresults[i].Time,
 		}
 	}
 

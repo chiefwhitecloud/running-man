@@ -96,7 +96,8 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
 
-	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<first_name>[a-zA-Z0-9]+)\\s(?P<last_name>[a-zA-Z0-9]+)(\\s(\\((?P<club>[A-Z]+)\\))?)\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])(.*)")
+	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<first_name>[a-zA-Z0-9]+)\\s(?P<last_name>[a-zA-Z0-9]+)(\\s(\\((?P<club>[A-Z]+)\\))?)\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
+
 	n1 := re.SubexpNames()
 
 	if err != nil {
@@ -119,7 +120,21 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 			p, _ := strconv.Atoi(md["position"])
 
-			racerResults = append(racerResults, model.Racer{Position: p, FirstName: md["first_name"], LastName: md["last_name"], BibNumber: md["bib_number"], Club: md["club"], Time: md["time"], Sex: md["sex"]})
+			sp, _ := strconv.Atoi(md["sex_pos"])
+
+			ap, _ := strconv.Atoi(md["category_position"])
+
+			racerResults = append(racerResults, model.Racer{Position: p,
+				FirstName:           md["first_name"],
+				LastName:            md["last_name"],
+				BibNumber:           md["bib_number"],
+				Club:                md["club"],
+				Time:                md["time"],
+				Sex:                 md["sex"],
+				SexPosition:         sp,
+				AgeCategory:         md["category"],
+				AgeCategoryPosition: ap,
+			})
 		}
 	}
 

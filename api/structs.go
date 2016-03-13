@@ -26,10 +26,13 @@ type RaceResults struct {
 }
 
 type RaceResult struct {
-	Position  int    `json:"position"`
-	RacerID   int    `json:"racerId"`
-	RaceID    int    `json:"raceId"`
-	BibNumber string `json:"bibNumber"`
+	Time                string `json:"time"`
+	Position            int    `json:"position"`
+	SexPosition         int    `json:"sexPosition"`
+	AgeCategoryPosition int    `json:"ageCategoryPosition"`
+	RacerID             string `json:"racerId"`
+	RaceID              string `json:"raceId"`
+	BibNumber           string `json:"bibNumber"`
 }
 
 type RaceFeed struct {
