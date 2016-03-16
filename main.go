@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/chiefwhitecloud/running-man/service"
@@ -11,9 +10,6 @@ import (
 
 func main() {
 	// Get Arguments
-	var cfgPath string
-
-	flag.StringVar(&cfgPath, "config", "./config.yaml", "Path to Config File")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [arguments] <command> \n", os.Args[0])
@@ -21,20 +17,6 @@ func main() {
 	}
 
 	flag.Parse()
-
-	// Load Config
-	type Configuration struct {
-		Bind     string
-		Database string
-	}
-
-	file, _ := os.Open(cfgPath)
-	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
 
 	// pull desired command/operation from args
 	if flag.NArg() == 0 {
@@ -44,7 +26,7 @@ func main() {
 	cmd := flag.Arg(0)
 
 	// Configure Server
-	s, err := service.NewRunningManService(configuration.Bind, configuration.Database)
+	s, err := service.NewRunningManService(os.Getenv("PORT"), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}

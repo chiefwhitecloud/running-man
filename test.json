@@ -1,4 +1,0 @@
-{
-	"Database": "root:@tcp(localhost:3306)/RunningManTest?charset=utf8&parseTime=True",
-	"Bind": "localhost:8081"
-}

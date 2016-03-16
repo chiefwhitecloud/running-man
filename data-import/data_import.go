@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
+	"github.com/chiefwhitecloud/running-man/feed"
 	"log"
 	"net/http"
 )
@@ -39,9 +40,11 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), 500)
 	}
 
-	r.Db.SaveRace(&raceDetails)
+	race, err := r.Db.SaveRace(&raceDetails)
 
-	raceDetailsFormatted, err := json.Marshal(&raceDetails)
+	raceFeed := feed.FormatRaceForFeed(race)
+
+	raceFeedFormatted, err := json.Marshal(&raceFeed)
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
@@ -49,6 +52,6 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
-	res.Write(raceDetailsFormatted)
+	res.Write([]byte(raceFeedFormatted))
 
 }

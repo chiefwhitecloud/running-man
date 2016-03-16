@@ -13,8 +13,6 @@ type RaceFetcher struct {
 
 func (c *RaceFetcher) GetRawResults(url string) ([]byte, error) {
 
-	log.Println(url)
-
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

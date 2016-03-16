@@ -24,23 +24,9 @@ var _ = Suite(&TestSuite{})
 
 func (s *TestSuite) SetUpSuite(c *C) {
 
-	// Load Config
-	type Configuration struct {
-		Database string
-		Bind     string
-	}
-
-	file, _ := os.Open("../test.json")
-	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
 	server := service.RunningManService{
-		Db:          database.Db{ConnectionString: configuration.Database},
-		Bind:        configuration.Bind,
+		Db:          database.Db{ConnectionString: os.Getenv("DATABASE_URL")},
+		Bind:        os.Getenv("PORT"),
 		RaceFetcher: &RaceFetcherStub{},
 	}
 
@@ -50,7 +36,7 @@ func (s *TestSuite) SetUpSuite(c *C) {
 
 	go s.s.Run()
 
-	s.host = "http://" + configuration.Bind
+	s.host = "http://localhost:" + os.Getenv("PORT")
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
@@ -64,19 +50,24 @@ func (s *TestSuite) TearDownTest(c *C) {
 // Simple import
 func (s *TestSuite) Test01Import(c *C) {
 
+	//import a race
 	request := gorequest.New()
 	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
 		Send(`{"raceUrl":"http://www.nlaa.ca/00-Road-Race.html"}`).
 		End()
 	c.Assert(resp.StatusCode, Equals, 201)
+	var race api.Race
+	jsonBlob := []byte(body)
+	err := json.Unmarshal(jsonBlob, &race)
+	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
 
 	// fetch the race list
 	resp, body, _ = request.Get(fmt.Sprintf("%s/races", s.host)).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 
-	var jsonBlob = []byte(body)
+	jsonBlob = []byte(body)
 	var races api.RaceFeed
-	err := json.Unmarshal(jsonBlob, &races)
+	err = json.Unmarshal(jsonBlob, &races)
 
 	c.Assert(len(races.Races), Equals, 1)
 	c.Assert(races.Races[0].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
@@ -90,7 +81,6 @@ func (s *TestSuite) Test01Import(c *C) {
 	resp, body, _ = request.Get(s.host + raceSelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
-	var race api.Race
 	err = json.Unmarshal(jsonBlob, &race)
 
 	c.Assert(err, Equals, nil)
@@ -143,21 +133,30 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(jordanRacer.LastName, Equals, "FEWER")
 	c.Assert(jordanRacer.Sex, Equals, "M")
 
+	//fetch the racer results
 	jordanResults := jordanRacer.ResultsPath
-
 	resp, body, _ = request.Get(s.host + jordanResults).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &raceResults)
 	c.Assert(err, Equals, nil)
+	c.Assert(len(raceResults.Results), Equals, 1)
 
-	//race2, err := client.AddRace("http://www.nlaa.ca/01-Road-Race.html")
-	//c.Assert(race2.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
-	//c.Assert(len(race2.Racers), Equals, 9)
-	//c.Assert(err, Equals, nil)
+	//import another race
+	resp, body, _ = request.Post(fmt.Sprintf("%s/import", s.host)).
+		Send(`{"raceUrl":"http://www.nlaa.ca/01-Road-Race.html"}`).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+	jsonBlob = []byte(body)
+	err = json.Unmarshal(jsonBlob, &race)
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
 
-	//racerResults, err = client.GetRacerResults()
-	//c.Assert(err, Equals, nil)
-	//c.Assert(len(racerResults.Results), Equals, 2)
+	//jordan should have two results
+	resp, body, _ = request.Get(s.host + jordanResults).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	err = json.Unmarshal(jsonBlob, &raceResults)
+	c.Assert(err, Equals, nil)
+	c.Assert(len(raceResults.Results), Equals, 2)
 
 }

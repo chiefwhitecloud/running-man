@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"log"
+	"time"
 )
 
 type Db struct {
@@ -13,10 +14,12 @@ type Db struct {
 }
 
 type Racer struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Sex       string
+	ID           int
+	FirstName    string
+	LastName     string
+	Sex          string
+	LowBirthday  time.Time
+	HighBirthday time.Time
 }
 
 type Race struct {
@@ -86,7 +89,7 @@ func (db *Db) Open() error {
 	return nil
 }
 
-func (db *Db) SaveRace(r *model.RaceDetails) error {
+func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 	cats := []AgeCategory{}
 
@@ -108,9 +111,11 @@ func (db *Db) SaveRace(r *model.RaceDetails) error {
 
 		if (db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName}).First(&racer).RecordNotFound()) {
 			racer = Racer{
-				FirstName: mRacer.FirstName,
-				LastName:  mRacer.LastName,
-				Sex:       mRacer.Sex,
+				FirstName:    mRacer.FirstName,
+				LastName:     mRacer.LastName,
+				Sex:          mRacer.Sex,
+				LowBirthday:  mRacer.LowBirthdayDate,
+				HighBirthday: mRacer.HighBirthdayDate,
 			}
 			db.orm.Create(&racer)
 		}
@@ -138,7 +143,7 @@ func (db *Db) SaveRace(r *model.RaceDetails) error {
 
 	}
 
-	return nil
+	return race, nil
 }
 
 func (db *Db) GetRaces() ([]Race, error) {

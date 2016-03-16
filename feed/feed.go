@@ -27,7 +27,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 
 	raceList := make([]api.Race, len(races))
 	for i, _ := range races {
-		raceList[i] = r.formatRaceForFeed(races[i])
+		raceList[i] = FormatRaceForFeed(races[i])
 	}
 
 	feed := api.RaceFeed{Races: raceList}
@@ -56,7 +56,7 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 
 	race, err := r.Db.GetRace(raceId)
 
-	raceFeed := r.formatRaceForFeed(race)
+	raceFeed := FormatRaceForFeed(race)
 
 	raceFeedFormatted, err := json.Marshal(&raceFeed)
 
@@ -148,7 +148,7 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 
 }
 
-func (r *FeedResource) formatRaceForFeed(race database.Race) api.Race {
+func FormatRaceForFeed(race database.Race) api.Race {
 	return api.Race{
 		Name:        race.Name,
 		SelfPath:    fmt.Sprintf("/race/%d", race.ID),
@@ -189,7 +189,7 @@ func (r *FeedResource) formatRaceResultsForFeed(raceresults []database.RaceResul
 
 	mapRaces := map[string]api.Race{}
 	for i := range races {
-		mapRaces[strconv.Itoa(races[i].ID)] = r.formatRaceForFeed(races[i])
+		mapRaces[strconv.Itoa(races[i].ID)] = FormatRaceForFeed(races[i])
 	}
 
 	rr := make([]api.RaceResult, len(raceresults))

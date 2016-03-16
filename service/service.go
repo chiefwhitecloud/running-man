@@ -80,5 +80,5 @@ func (s *RunningManService) Run() error {
 	http.Handle("/", r)
 
 	// Start HTTP Server
-	return http.ListenAndServe(s.Bind, nil)
+	return http.ListenAndServe(":"+s.Bind, nil)
 }
