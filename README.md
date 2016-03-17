@@ -5,6 +5,15 @@ RESTful JSON API for importing and aggregating road running results.
 ### Installation
 
 ```sh
+
+
+
+# set environment variables
+
+DATABASE_URL: Database connection string
+PORT : Port number the service will run on
+ASSET_PATH :  JS and CSS location
+
 # create the database configured in `config.json`
 $ mysql -u root -p -e "CREATE DATABASE RunningMan;"
 
@@ -19,11 +28,12 @@ $ go build
 $ go test ./...
 
 # add the tables
-$ ./running-man -config ./config.json migrate-db
+$ ./running-man migrate-db
 
 # start the http server
-$ ./running-man -config ./config.json serve
+$ ./running-man serve
 ```
+
 
 ### Importing Race Results
 
