@@ -3,9 +3,9 @@ package feed
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"

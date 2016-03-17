@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	. "gopkg.in/check.v1"
+	. "github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/gopkg.in/check.v1"
 	"io/ioutil"
 	"log"
 	"net/url"
