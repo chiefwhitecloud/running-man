@@ -1,1 +1,1 @@
-web: running-man
+web: running-man serve
