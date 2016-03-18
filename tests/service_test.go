@@ -3,11 +3,11 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/github.com/parnurzeal/gorequest"
-	. "github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/gopkg.in/check.v1"
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
 	"github.com/chiefwhitecloud/running-man/service"
+	"github.com/parnurzeal/gorequest"
+	. "gopkg.in/check.v1"
 	"log"
 	"os"
 )

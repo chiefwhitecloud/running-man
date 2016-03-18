@@ -3,8 +3,8 @@ package dataimport
 import (
 	"bytes"
 	"errors"
-	"github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/golang.org/x/net/html"
 	"github.com/chiefwhitecloud/running-man/model"
+	"golang.org/x/net/html"
 	"log"
 	"regexp"
 	"strconv"

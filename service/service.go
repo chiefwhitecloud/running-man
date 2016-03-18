@@ -1,13 +1,13 @@
 package service
 
 import (
-	"github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/github.com/gorilla/mux"
 	_ "github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/data-import"
 	"github.com/chiefwhitecloud/running-man/data-import/fetcher"
 	"github.com/chiefwhitecloud/running-man/database"
 	"github.com/chiefwhitecloud/running-man/feed"
 	"github.com/chiefwhitecloud/running-man/ui"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"

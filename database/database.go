@@ -1,9 +1,9 @@
 package database
 
 import (
-	_ "github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
-	"github.com/chiefwhitecloud/running-man/Godeps/_workspace/src/github.com/jinzhu/gorm"
 	"github.com/chiefwhitecloud/running-man/model"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 	"log"
 	"time"
 )
