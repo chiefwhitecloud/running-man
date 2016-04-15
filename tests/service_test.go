@@ -71,26 +71,26 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	c.Assert(len(races.Races), Equals, 1)
 	c.Assert(races.Races[0].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
-	c.Assert(races.Races[0].SelfPath, Equals, "/race/1")
-	c.Assert(races.Races[0].ResultsPath, Equals, "/race/1/results")
+	c.Assert(races.Races[0].SelfPath, Equals, s.host + "/race/1")
+	c.Assert(races.Races[0].ResultsPath, Equals, s.host + "/race/1/results")
 	c.Assert(races.Races[0].Date, Equals, "2015-04-12")
 
 	raceSelfPath := races.Races[0].SelfPath
 	raceResultsPath := races.Races[0].ResultsPath
 
-	resp, body, _ = request.Get(s.host + raceSelfPath).End()
+	resp, body, _ = request.Get(raceSelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &race)
 
 	c.Assert(err, Equals, nil)
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
-	c.Assert(race.SelfPath, Equals, "/race/1")
-	c.Assert(race.ResultsPath, Equals, "/race/1/results")
+	c.Assert(race.SelfPath, Equals, s.host + "/race/1")
+	c.Assert(race.ResultsPath, Equals, s.host + "/race/1/results")
 	c.Assert(race.Date, Equals, "2015-04-12")
 
 	//fetch race results
-	resp, body, _ = request.Get(s.host + raceResultsPath).End()
+	resp, body, _ = request.Get(raceResultsPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	var raceResults api.RaceResults
@@ -123,7 +123,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//fetch the racer
 	jordanSelfPath := raceResults.Racers["1"].SelfPath
-	resp, body, _ = request.Get(s.host + jordanSelfPath).End()
+	resp, body, _ = request.Get(jordanSelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	var jordanRacer api.Racer
@@ -135,7 +135,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//fetch the racer results
 	jordanResults := jordanRacer.ResultsPath
-	resp, body, _ = request.Get(s.host + jordanResults).End()
+	resp, body, _ = request.Get(jordanResults).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &raceResults)
@@ -152,7 +152,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
 
 	//jordan should have two results
-	resp, body, _ = request.Get(s.host + jordanResults).End()
+	resp, body, _ = request.Get(jordanResults).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &raceResults)

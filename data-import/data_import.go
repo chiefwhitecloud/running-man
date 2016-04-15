@@ -42,7 +42,7 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 
 	race, err := r.Db.SaveRace(&raceDetails)
 
-	raceFeed := feed.FormatRaceForFeed(race)
+	raceFeed := feed.FormatRaceForFeed(req, race)
 
 	raceFeedFormatted, err := json.Marshal(&raceFeed)
 
