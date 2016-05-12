@@ -14,12 +14,10 @@ type Db struct {
 }
 
 type Racer struct {
-	ID           int
-	FirstName    string
-	LastName     string
-	Sex          string
-	LowBirthday  time.Time
-	HighBirthday time.Time
+	ID        int
+	FirstName string
+	LastName  string
+	Sex       string
 }
 
 type Race struct {
@@ -47,6 +45,11 @@ type RaceResult struct {
 type AgeCategory struct {
 	ID   int
 	Name string
+}
+
+type AgeLookup struct {
+	minAge int
+	maxAge int
 }
 
 type raceResultForTransform struct {
@@ -111,11 +114,9 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 		if (db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName}).First(&racer).RecordNotFound()) {
 			racer = Racer{
-				FirstName:    mRacer.FirstName,
-				LastName:     mRacer.LastName,
-				Sex:          mRacer.Sex,
-				LowBirthday:  mRacer.LowBirthdayDate,
-				HighBirthday: mRacer.HighBirthdayDate,
+				FirstName: mRacer.FirstName,
+				LastName:  mRacer.LastName,
+				Sex:       mRacer.Sex,
 			}
 			db.orm.Create(&racer)
 		}
@@ -162,6 +163,67 @@ func (db *Db) GetRacer(id int) (Racer, error) {
 	racer := Racer{}
 	db.orm.First(&racer, id)
 	return racer, nil
+}
+
+func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
+
+	var high time.Time
+	var low time.Time
+
+	ageCategoryMap := map[string]*AgeLookup{
+		"U20":     &AgeLookup{1, 19},
+		"20-29":   &AgeLookup{20, 29},
+		"30-39":   &AgeLookup{30, 39},
+		"40-49":   &AgeLookup{40, 49},
+		"50-59":   &AgeLookup{50, 59},
+		"60-69":   &AgeLookup{60, 69},
+		"70-79":   &AgeLookup{70, 79},
+		"80-89":   &AgeLookup{80, 89},
+		"90-99":   &AgeLookup{90, 99},
+		"100-109": &AgeLookup{100, 109},
+	}
+
+	rows, err := db.orm.Table("race_result").
+		Select("race.year, race.month, race.day, age_category.name").
+		Joins("join race on race_result.race_id = race.id join racer on race_result.racer_id = racer.id join age_category on age_category.id = race_result.age_category_id").
+		Where("race_result.racer_id = ?", id).
+		Rows()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	var (
+		year   int
+		month  int
+		day    int
+		agecat string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&year, &month, &day, &agecat)
+		if err != nil {
+			log.Fatal(err)
+		}
+		age := ageCategoryMap[agecat]
+
+		var lowDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		lowDate = lowDate.AddDate(-age.maxAge, 0, 1)
+
+		if low.IsZero() || low.Before(lowDate) {
+			low = lowDate
+		}
+
+		var highDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		highDate = highDate.AddDate(-age.minAge, 0, 0)
+
+		if high.IsZero() || high.Before(highDate) {
+			high = highDate
+		}
+
+	}
+
+	return low, high, nil
 }
 
 func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race, error) {

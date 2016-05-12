@@ -60,6 +60,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	jsonBlob := []byte(body)
 	err := json.Unmarshal(jsonBlob, &race)
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
+	c.Assert(race.Id, Equals, 1)
 
 	// fetch the race list
 	resp, body, _ = request.Get(fmt.Sprintf("%s/races", s.host)).End()
@@ -71,8 +72,8 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	c.Assert(len(races.Races), Equals, 1)
 	c.Assert(races.Races[0].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
-	c.Assert(races.Races[0].SelfPath, Equals, s.host + "/race/1")
-	c.Assert(races.Races[0].ResultsPath, Equals, s.host + "/race/1/results")
+	c.Assert(races.Races[0].SelfPath, Equals, s.host+"/race/1")
+	c.Assert(races.Races[0].ResultsPath, Equals, s.host+"/race/1/results")
 	c.Assert(races.Races[0].Date, Equals, "2015-04-12")
 
 	raceSelfPath := races.Races[0].SelfPath
@@ -85,8 +86,8 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	c.Assert(err, Equals, nil)
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
-	c.Assert(race.SelfPath, Equals, s.host + "/race/1")
-	c.Assert(race.ResultsPath, Equals, s.host + "/race/1/results")
+	c.Assert(race.SelfPath, Equals, s.host+"/race/1")
+	c.Assert(race.ResultsPath, Equals, s.host+"/race/1/results")
 	c.Assert(race.Date, Equals, "2015-04-12")
 
 	//fetch race results
@@ -132,6 +133,8 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(jordanRacer.FirstName, Equals, "JORDAN")
 	c.Assert(jordanRacer.LastName, Equals, "FEWER")
 	c.Assert(jordanRacer.Sex, Equals, "M")
+	c.Assert(jordanRacer.BirthDateLow, Equals, "1986-04-13")
+	c.Assert(jordanRacer.BirthDateHigh, Equals, "1995-04-12")
 
 	//fetch the racer results
 	jordanResults := jordanRacer.ResultsPath
@@ -158,5 +161,13 @@ func (s *TestSuite) Test01Import(c *C) {
 	err = json.Unmarshal(jsonBlob, &raceResults)
 	c.Assert(err, Equals, nil)
 	c.Assert(len(raceResults.Results), Equals, 2)
+
+	//his birthdate range should be updated.
+	resp, body, _ = request.Get(jordanSelfPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	err = json.Unmarshal(jsonBlob, &jordanRacer)
+	c.Assert(jordanRacer.BirthDateLow, Equals, "1986-04-27")
+	c.Assert(jordanRacer.BirthDateHigh, Equals, "1995-04-26")
 
 }

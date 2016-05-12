@@ -5,6 +5,7 @@ type DataImport struct {
 }
 
 type Race struct {
+	Id    			int `json:"id"`
 	Name        string `json:"name"`
 	SelfPath    string `json:"selfPath"`
 	ResultsPath string `json:"resultsPath"`
@@ -17,6 +18,8 @@ type Racer struct {
 	Sex         string `json:"sex"`
 	SelfPath    string `json:"selfPath"`
 	ResultsPath string `json:"resultsPath"`
+	BirthDateLow string `json:"birthDateLow,omitempty"`
+	BirthDateHigh string `json:"birthDateHigh,omitempty"`	
 }
 
 type RaceResults struct {

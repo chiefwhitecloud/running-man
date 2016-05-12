@@ -82,7 +82,13 @@ func (r *FeedResource) GetRacer(res http.ResponseWriter, req *http.Request) {
 
 	racer, err := r.Db.GetRacer(racerId)
 
+	lowBirthDate, highBirthDate, _ := r.Db.GetRacerBirthDates(racerId)
+
 	racerFeed := r.formatRacerForFeed(req, racer)
+
+	racerFeed.BirthDateLow = fmt.Sprintf("%0.4d-%0.2d-%0.2d", lowBirthDate.Year(), lowBirthDate.Month(), lowBirthDate.Day())
+
+	racerFeed.BirthDateHigh = fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day())
 
 	racerFeedFormatted, err := json.Marshal(&racerFeed)
 
@@ -150,6 +156,7 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 
 func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 	return api.Race{
+		Id:					 race.ID,
 		Name:        race.Name,
 		SelfPath:    fmt.Sprintf("http://%s/race/%d", req.Host, race.ID),
 		ResultsPath: fmt.Sprintf("http://%s/race/%d/results", req.Host, race.ID),

@@ -9,22 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var _ = log.Print
-
-type AgeCategory struct {
-	MinAge int
-	MaxAge int
-}
-
-func (age *AgeCategory) GetBirthdayDateRange(givenDate time.Time) (time.Time, time.Time, error) {
-	//based on the given date what are the high and low range for when their birthday could be
-	lowDate := givenDate.AddDate((-1 * age.MinAge), 0, 0)
-	highDate := givenDate.AddDate(0, 0, -1)
-	return lowDate, highDate, nil
-}
 
 func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
@@ -101,19 +88,6 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		"DECEMBER":  12,
 	}
 
-	ageCategoryMap := map[string]*AgeCategory{
-		"U20":     &AgeCategory{1, 19},
-		"20-29":   &AgeCategory{20, 29},
-		"30-39":   &AgeCategory{30, 39},
-		"40-49":   &AgeCategory{40, 49},
-		"50-59":   &AgeCategory{50, 59},
-		"60-69":   &AgeCategory{60, 69},
-		"70-79":   &AgeCategory{70, 79},
-		"80-89":   &AgeCategory{80, 89},
-		"90-99":   &AgeCategory{90, 99},
-		"100-109": &AgeCategory{100, 109},
-	}
-
 	if len(r3) > 0 {
 		raceMonth = monthMap[strings.ToUpper(r3[1])]
 		raceDay, err = strconv.Atoi(r3[2])
@@ -121,8 +95,6 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	} else {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
-
-	raceDate := time.Date(raceYear, time.Month(raceMonth), raceDay, 0, 0, 0, 0, time.UTC)
 
 	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<first_name>[a-zA-Z0-9]+)\\s(?P<last_name>[a-zA-Z0-9]+)(\\s(\\((?P<club>[A-Z]+)\\))?)\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
 
@@ -152,8 +124,6 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 			ap, _ := strconv.Atoi(md["category_position"])
 
-			low, high, _ := ageCategoryMap[md["category"]].GetBirthdayDateRange(raceDate)
-
 			racerResults = append(racerResults, model.Racer{Position: p,
 				FirstName:           md["first_name"],
 				LastName:            md["last_name"],
@@ -164,8 +134,6 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				SexPosition:         sp,
 				AgeCategory:         md["category"],
 				AgeCategoryPosition: ap,
-				LowBirthdayDate:     low,
-				HighBirthdayDate:    high,
 			})
 		}
 	}
