@@ -70,11 +70,12 @@ func (s *RunningManService) Run() error {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/import", importer.DoImport).Methods("POST")
-	r.HandleFunc("/races", feeds.ListRaces).Methods("GET")
-	r.HandleFunc("/race/{id}", feeds.GetRace).Methods("GET")
-	r.HandleFunc("/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
-	r.HandleFunc("/racer/{id}", feeds.GetRacer).Methods("GET")
-	r.HandleFunc("/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
+	r.HandleFunc("/feed/races", feeds.ListRaces).Methods("GET")
+	r.HandleFunc("/feed/race/{id}", feeds.GetRace).Methods("GET")
+	r.HandleFunc("/feed/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
+	r.HandleFunc("/feed/racer/{id}", feeds.GetRacer).Methods("GET")
+	r.HandleFunc("/feed/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
+	r.HandleFunc("/feed/racer/{id}/profile", feeds.GetRacerProfile).Methods("GET")
 	r.HandleFunc("/", ui.GetDefaultTemplate).Methods("GET")
 
 	http.Handle("/", r)

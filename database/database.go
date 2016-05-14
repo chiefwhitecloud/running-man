@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"log"
+	"sort"
 	"time"
 )
 
@@ -58,6 +59,25 @@ type raceResultForTransform struct {
 	last  string
 }
 
+type AgeResult struct {
+	RaceDate    time.Time
+	AgeCategory string
+}
+
+type AgeResults []AgeResult
+
+func (slice AgeResults) Len() int {
+	return len(slice)
+}
+
+func (slice AgeResults) Less(i, j int) bool {
+	return slice[i].RaceDate.Before(slice[j].RaceDate)
+}
+
+func (slice AgeResults) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
 func (db *Db) Migrate() {
 	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
 
@@ -105,20 +125,50 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 	db.orm.Create(&race)
 
+	raceDate := time.Date(r.Year, time.Month(r.Month), r.Day, 0, 0, 0, 0, time.UTC)
+
 	//save the race results information
 	for i := range r.Racers {
 
 		mRacer := r.Racers[i]
 
+		var racers []Racer
 		var racer Racer
 
-		if (db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName}).First(&racer).RecordNotFound()) {
+		db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName, Sex: mRacer.Sex}).Find(&racers)
+
+		if len(racers) == 0 {
+			//must be a new racer
 			racer = Racer{
 				FirstName: mRacer.FirstName,
 				LastName:  mRacer.LastName,
 				Sex:       mRacer.Sex,
 			}
 			db.orm.Create(&racer)
+		} else if len(racers) > 0 {
+			//look at the racers age catgory history... does it look like a match?
+			for i := range racers {
+				early, late, _ := db.GetRacerBirthDates(racers[i].ID)
+				minAge, maxAge, _ := db.GetAgeRangeOnDate(early, late, raceDate)
+
+				if db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory) {
+					//existing racer is found
+					racer = racers[i]
+					break
+				}
+			}
+
+			if racer == (Racer{}) {
+				racer = Racer{
+					FirstName: mRacer.FirstName,
+					LastName:  mRacer.LastName,
+					Sex:       mRacer.Sex,
+				}
+				db.orm.Create(&racer)
+			}
+
+			//XXX Fix me: handle two runners with the same name, sex, and age category in the same race.
+
 		}
 
 		//find the agecategory id.
@@ -165,11 +215,12 @@ func (db *Db) GetRacer(id int) (Racer, error) {
 	return racer, nil
 }
 
-func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
+func (db *Db) isAgeRangeWithinCatgory(minAge int, maxAge int, ageCategory string) bool {
+	catMinAge, catMaxAge, _ := db.GetMinMaxAgeForCategory(ageCategory)
+	return minAge >= catMinAge && maxAge <= catMaxAge
+}
 
-	var high time.Time
-	var low time.Time
-
+func (db *Db) GetMinMaxAgeForCategory(ageCategory string) (int, int, error) {
 	ageCategoryMap := map[string]*AgeLookup{
 		"U20":     &AgeLookup{1, 19},
 		"20-29":   &AgeLookup{20, 29},
@@ -182,6 +233,36 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 		"90-99":   &AgeLookup{90, 99},
 		"100-109": &AgeLookup{100, 109},
 	}
+
+	age := ageCategoryMap[ageCategory]
+
+	return age.minAge, age.maxAge, nil
+}
+
+func (db *Db) GetAgeRangeOnDate(earlyBirthDate time.Time, lateBirthDate time.Time, raceDate time.Time) (int, int, error) {
+	earlyDate := raceDate.Sub(earlyBirthDate)
+	years := earlyDate / time.Hour / 24 / 365
+
+	lateDate := raceDate.Sub(lateBirthDate)
+	minyears := lateDate / time.Hour / 24 / 365
+
+	return int(minyears), int(years), nil
+}
+
+func (db *Db) GetBirthDateRangeForCategory(raceDate time.Time, ageCategory string) (time.Time, time.Time, error) {
+	var earlyDate time.Time
+	var lateDate time.Time
+
+	catMinAge, catMaxAge, _ := db.GetMinMaxAgeForCategory(ageCategory)
+
+	earlyDate = raceDate.AddDate(-catMaxAge-1, 0, 1)
+	lateDate = earlyDate.AddDate(catMaxAge-catMinAge+1, 0, -1)
+
+	return earlyDate, lateDate, nil
+
+}
+
+func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 
 	rows, err := db.orm.Table("race_result").
 		Select("race.year, race.month, race.day, age_category.name").
@@ -200,25 +281,47 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 		agecat string
 	)
 
+	var results AgeResults
+
 	for rows.Next() {
 		err := rows.Scan(&year, &month, &day, &agecat)
 		if err != nil {
 			log.Fatal(err)
 		}
-		age := ageCategoryMap[agecat]
 
-		var lowDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		lowDate = lowDate.AddDate(-age.maxAge, 0, 1)
+		results = append(results, AgeResult{
+			RaceDate:    time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+			AgeCategory: agecat,
+		})
+	}
 
-		if low.IsZero() || low.Before(lowDate) {
-			low = lowDate
+	//sort the results from earliest to latest
+	sort.Sort(results)
+
+	var high time.Time
+	var low time.Time
+	var ageCat string
+	var lastRaceDate time.Time
+
+	for i := range results {
+
+		if ageCat == "" && lastRaceDate.IsZero() {
+			ageCat = results[i].AgeCategory
+			lastRaceDate = results[i].RaceDate
+			low, high, _ = db.GetBirthDateRangeForCategory(results[i].RaceDate, results[i].AgeCategory)
 		}
 
-		var highDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		highDate = highDate.AddDate(-age.minAge, 0, 0)
+		if ageCat != results[i].AgeCategory {
 
-		if high.IsZero() || high.Before(highDate) {
-			high = highDate
+			lowforCat, highforCat, _ := db.GetBirthDateRangeForCategory(results[i].RaceDate, results[i].AgeCategory)
+
+			if lowforCat.After(low) {
+				low = lowforCat
+			}
+
+			if highforCat.Before(high) {
+				high = highforCat
+			}
 		}
 
 	}

@@ -81,16 +81,43 @@ func (r *FeedResource) GetRacer(res http.ResponseWriter, req *http.Request) {
 	}
 
 	racer, err := r.Db.GetRacer(racerId)
+	racerFeed := r.formatRacerForFeed(req, racer)
+	racerFeedFormatted, err := json.Marshal(&racerFeed)
+
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(racerFeedFormatted))
+
+}
+
+func (r *FeedResource) GetRacerProfile(res http.ResponseWriter, req *http.Request) {
+
+	vars := mux.Vars(req)
+
+	racerId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	racer, err := r.Db.GetRacer(racerId)
 
 	lowBirthDate, highBirthDate, _ := r.Db.GetRacerBirthDates(racerId)
 
-	racerFeed := r.formatRacerForFeed(req, racer)
+	racerProfile := api.RacerProfile{
+		FirstName:     racer.FirstName,
+		LastName:      racer.LastName,
+		Sex:           racer.Sex,
+		SelfPath:      fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
+		BirthDateLow:  fmt.Sprintf("%0.4d-%0.2d-%0.2d", lowBirthDate.Year(), lowBirthDate.Month(), lowBirthDate.Day()),
+		BirthDateHigh: fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day()),
+	}
 
-	racerFeed.BirthDateLow = fmt.Sprintf("%0.4d-%0.2d-%0.2d", lowBirthDate.Year(), lowBirthDate.Month(), lowBirthDate.Day())
-
-	racerFeed.BirthDateHigh = fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day())
-
-	racerFeedFormatted, err := json.Marshal(&racerFeed)
+	racerFeedFormatted, err := json.Marshal(&racerProfile)
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
@@ -156,10 +183,10 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 
 func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 	return api.Race{
-		Id:					 race.ID,
+		Id:          race.ID,
 		Name:        race.Name,
-		SelfPath:    fmt.Sprintf("http://%s/race/%d", req.Host, race.ID),
-		ResultsPath: fmt.Sprintf("http://%s/race/%d/results", req.Host, race.ID),
+		SelfPath:    fmt.Sprintf("http://%s/feed/race/%d", req.Host, race.ID),
+		ResultsPath: fmt.Sprintf("http://%s/feed/race/%d/results", req.Host, race.ID),
 		Date:        fmt.Sprintf("%0.4d-%0.2d-%0.2d", race.Year, race.Month, race.Day),
 	}
 }
@@ -169,8 +196,9 @@ func (r *FeedResource) formatRacerForFeed(req *http.Request, racer database.Race
 		FirstName:   racer.FirstName,
 		LastName:    racer.LastName,
 		Sex:         racer.Sex,
-		SelfPath:    fmt.Sprintf("http://%s/racer/%d", req.Host, racer.ID),
-		ResultsPath: fmt.Sprintf("http://%s/racer/%d/results", req.Host, racer.ID),
+		SelfPath:    fmt.Sprintf("http://%s/feed/racer/%d", req.Host, racer.ID),
+		ResultsPath: fmt.Sprintf("http://%s/feed/racer/%d/results", req.Host, racer.ID),
+		ProfilePath: fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
 	}
 }
 
