@@ -219,7 +219,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &jordanRacerProfile)
-	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-13")
+	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-27")
 	c.Assert(jordanRacerProfile.BirthDateHigh, Equals, "1995-04-12")
 
 }

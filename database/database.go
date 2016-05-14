@@ -309,10 +309,7 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 			ageCat = results[i].AgeCategory
 			lastRaceDate = results[i].RaceDate
 			low, high, _ = db.GetBirthDateRangeForCategory(results[i].RaceDate, results[i].AgeCategory)
-		}
-
-		if ageCat != results[i].AgeCategory {
-
+		} else {
 			lowforCat, highforCat, _ := db.GetBirthDateRangeForCategory(results[i].RaceDate, results[i].AgeCategory)
 
 			if lowforCat.After(low) {
@@ -322,8 +319,8 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 			if highforCat.Before(high) {
 				high = highforCat
 			}
-		}
 
+		}
 	}
 
 	return low, high, nil
