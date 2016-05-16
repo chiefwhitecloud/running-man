@@ -172,22 +172,24 @@ func (s *TestSuite) Test01Import(c *C) {
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &raceResults)
 	c.Assert(err, Equals, nil)
-	c.Assert(len(raceResults.Results), Equals, 10)
+	c.Assert(len(raceResults.Results), Equals, 11)
 
-	//check micheal scotts bday
+	slowChrisResultsPath := raceResults.Racers[raceResults.Results[10].RacerID].ResultsPath
+
+	//check joe's bday
 	c.Assert(raceResults.Results[9].Position, Equals, 10)
-	michealScottSelfPath := raceResults.Racers[raceResults.Results[9].RacerID].SelfPath
-	resp, body, _ = request.Get(michealScottSelfPath).End()
+	joeDunfordSelfPath := raceResults.Racers[raceResults.Results[9].RacerID].SelfPath
+	resp, body, _ = request.Get(joeDunfordSelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
-	var michealScottRacer api.Racer
-	err = json.Unmarshal(jsonBlob, &michealScottRacer)
+	var joeDunfordRacer api.Racer
+	err = json.Unmarshal(jsonBlob, &joeDunfordRacer)
 	c.Assert(err, Equals, nil)
-	c.Assert(michealScottRacer.FirstName, Equals, "JOE")
-	c.Assert(michealScottRacer.LastName, Equals, "DUNFORD")
-	c.Assert(michealScottRacer.Sex, Equals, "M")
+	c.Assert(joeDunfordRacer.FirstName, Equals, "JOE")
+	c.Assert(joeDunfordRacer.LastName, Equals, "DUNFORD")
+	c.Assert(joeDunfordRacer.Sex, Equals, "M")
 
-	joeDunfordProfilePath := michealScottRacer.ProfilePath
+	joeDunfordProfilePath := joeDunfordRacer.ProfilePath
 	resp, body, _ = request.Get(joeDunfordProfilePath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
@@ -198,8 +200,8 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(joeDunfordProfile.BirthDateHigh, Equals, "1965-04-26")
 
 	//fetch the racer results
-	michealScottResults := michealScottRacer.ResultsPath
-	resp, body, _ = request.Get(michealScottResults).End()
+	joeDunfordResults := joeDunfordRacer.ResultsPath
+	resp, body, _ = request.Get(joeDunfordResults).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
 	err = json.Unmarshal(jsonBlob, &raceResults)
@@ -221,5 +223,13 @@ func (s *TestSuite) Test01Import(c *C) {
 	err = json.Unmarshal(jsonBlob, &jordanRacerProfile)
 	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-27")
 	c.Assert(jordanRacerProfile.BirthDateHigh, Equals, "1995-04-12")
+
+	//slow chris should only have one result
+	resp, body, _ = request.Get(slowChrisResultsPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	err = json.Unmarshal(jsonBlob, &raceResults)
+	c.Assert(err, Equals, nil)
+	c.Assert(len(raceResults.Results), Equals, 1)
 
 }

@@ -137,6 +137,14 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 		db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName, Sex: mRacer.Sex}).Find(&racers)
 
+		//find the agecategory id.
+		catId := 0
+		for i := range cats {
+			if cats[i].Name == mRacer.AgeCategory {
+				catId = cats[i].ID
+			}
+		}
+
 		if len(racers) == 0 {
 			//must be a new racer
 			racer = Racer{
@@ -146,18 +154,38 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 			}
 			db.orm.Create(&racer)
 		} else if len(racers) > 0 {
-			//look at the racers age catgory history... does it look like a match?
+			//We have some Racer records with the same name, etc... Time to match the race result with an existing Racer in the database.
+
 			for i := range racers {
+				//did we already save a racer with same name and age group to this race?
+				//XXX Fix me... this should be added to the query above.
+				rows, _ := db.orm.Table("race_result").
+					Select("racer.id").
+					Joins("join racer on racer.id = race_result.racer_id").
+					Where("racer.first_name = ? AND racer.last_name = ? AND race_result.race_id = ? AND race_result.age_category_id = ?", mRacer.FirstName, mRacer.LastName, race.ID, catId).
+					Rows()
+
+				found := false
+
+				for rows.Next() {
+					var uid int
+					_ = rows.Scan(&uid)
+					found = true
+				}
+
+				//look at the racers age catgory history... does it look like a match?
 				early, late, _ := db.GetRacerBirthDates(racers[i].ID)
 				minAge, maxAge, _ := db.GetAgeRangeOnDate(early, late, raceDate)
 
-				if db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory) {
+				//check to see if the race is within the same age category
+				if db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory) && !found {
 					//existing racer is found
 					racer = racers[i]
 					break
 				}
 			}
 
+			//if no match found... create a new Racer
 			if racer == (Racer{}) {
 				racer = Racer{
 					FirstName: mRacer.FirstName,
@@ -167,16 +195,6 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 				db.orm.Create(&racer)
 			}
 
-			//XXX Fix me: handle two runners with the same name, sex, and age category in the same race.
-
-		}
-
-		//find the agecategory id.
-		catId := 0
-		for i := range cats {
-			if cats[i].Name == mRacer.AgeCategory {
-				catId = cats[i].ID
-			}
 		}
 
 		result := RaceResult{
