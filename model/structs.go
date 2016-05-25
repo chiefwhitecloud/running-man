@@ -1,13 +1,8 @@
 package model
 
-import (
-	"time"
-)
-
 type Racer struct {
 	Position            int
-	FirstName           string
-	LastName            string
+	Name                string
 	BibNumber           string
 	Club                string
 	Time                string
@@ -15,8 +10,6 @@ type Racer struct {
 	SexPosition         int
 	AgeCategory         string
 	AgeCategoryPosition int
-	LowBirthdayDate     time.Time
-	HighBirthdayDate    time.Time
 }
 
 type RaceDetails struct {

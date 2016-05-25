@@ -1,11 +1,11 @@
 package database
 
 import (
+	"fmt"
 	"github.com/chiefwhitecloud/running-man/model"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"log"
-	"sort"
 	"time"
 )
 
@@ -15,22 +15,19 @@ type Db struct {
 }
 
 type Racer struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Sex       string
+	ID      int
+	Created time.Time
 }
 
 type Race struct {
-	ID    int
-	Name  string
-	Year  int
-	Month int
-	Day   int
+	ID   int
+	Name string
+	Date time.Time
 }
 
 type RaceResult struct {
 	ID                  int
+	Name                string
 	Position            int
 	SexPosition         int
 	AgeCategoryPosition int
@@ -41,6 +38,7 @@ type RaceResult struct {
 	Time                string
 	Racer               Racer
 	Race                Race
+	Sex                 string
 }
 
 type AgeCategory struct {
@@ -62,20 +60,6 @@ type raceResultForTransform struct {
 type AgeResult struct {
 	RaceDate    time.Time
 	AgeCategory string
-}
-
-type AgeResults []AgeResult
-
-func (slice AgeResults) Len() int {
-	return len(slice)
-}
-
-func (slice AgeResults) Less(i, j int) bool {
-	return slice[i].RaceDate.Before(slice[j].RaceDate)
-}
-
-func (slice AgeResults) Swap(i, j int) {
-	slice[i], slice[j] = slice[j], slice[i]
 }
 
 func (db *Db) Migrate() {
@@ -118,26 +102,23 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 	db.orm.Find(&cats)
 
-	race := Race{Name: r.Name,
-		Year:  r.Year,
-		Month: r.Month,
-		Day:   r.Day}
+	raceDate := time.Date(r.Year, time.Month(r.Month), r.Day, 0, 0, 0, 0, time.UTC)
+
+	race := Race{Name: r.Name, Date: raceDate}
 
 	db.orm.Create(&race)
-
-	raceDate := time.Date(r.Year, time.Month(r.Month), r.Day, 0, 0, 0, 0, time.UTC)
 
 	//save the race results information
 	for i := range r.Racers {
 
 		mRacer := r.Racers[i]
 
-		var racers []Racer
+		var raceResults []RaceResult
 		var racer Racer
 
-		db.orm.Where(&Racer{FirstName: mRacer.FirstName, LastName: mRacer.LastName, Sex: mRacer.Sex}).Find(&racers)
+		db.orm.Where(&RaceResult{Name: mRacer.Name}).Find(&raceResults)
 
-		//find the agecategory id.
+		//find the agecategory id for the current race result
 		catId := 0
 		for i := range cats {
 			if cats[i].Name == mRacer.AgeCategory {
@@ -145,25 +126,20 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 			}
 		}
 
-		if len(racers) == 0 {
-			//must be a new racer
-			racer = Racer{
-				FirstName: mRacer.FirstName,
-				LastName:  mRacer.LastName,
-				Sex:       mRacer.Sex,
-			}
+		if len(raceResults) == 0 {
+			//must be a new racer.. no racer with that name
+			racer = Racer{Created: time.Now()}
 			db.orm.Create(&racer)
-		} else if len(racers) > 0 {
+		} else if len(raceResults) > 0 {
 			//We have some Racer records with the same name, etc... Time to match the race result with an existing Racer in the database.
 
-			for i := range racers {
+			for i := range raceResults {
 				//did we already save a racer with same name and age group to this race?
-				//XXX Fix me... this should be added to the query above.
-				rows, _ := db.orm.Table("race_result").
-					Select("racer.id").
-					Joins("join racer on racer.id = race_result.racer_id").
-					Where("racer.first_name = ? AND racer.last_name = ? AND race_result.race_id = ? AND race_result.age_category_id = ?", mRacer.FirstName, mRacer.LastName, race.ID, catId).
-					Rows()
+
+				//a runnner with same name already ran this race.
+				// FIX ME:  Needs to check their aliases too
+				rows, _ := db.orm.Raw("SELECT race_result.racer_id FROM race_result WHERE race_result.name = ? AND race_result.race_id = ? AND race_result.age_category_id = ?", mRacer.Name, race.ID, catId).Rows()
+				defer rows.Close()
 
 				found := false
 
@@ -174,24 +150,20 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 				}
 
 				//look at the racers age catgory history... does it look like a match?
-				early, late, _ := db.GetRacerBirthDates(racers[i].ID)
+				early, late, _ := db.GetRacerBirthDates(raceResults[i].RacerID)
 				minAge, maxAge, _ := db.GetAgeRangeOnDate(early, late, raceDate)
 
 				//check to see if the race is within the same age category
 				if db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory) && !found {
 					//existing racer is found
-					racer = racers[i]
+					db.orm.Where(&Racer{ID: raceResults[i].RacerID}).Find(&racer)
 					break
 				}
 			}
 
 			//if no match found... create a new Racer
 			if racer == (Racer{}) {
-				racer = Racer{
-					FirstName: mRacer.FirstName,
-					LastName:  mRacer.LastName,
-					Sex:       mRacer.Sex,
-				}
+				racer = Racer{Created: time.Now()}
 				db.orm.Create(&racer)
 			}
 
@@ -200,12 +172,14 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 		result := RaceResult{
 			RaceID:              race.ID,
 			RacerID:             racer.ID,
+			Name:                mRacer.Name,
 			Position:            mRacer.Position,
 			BibNumber:           mRacer.BibNumber,
 			SexPosition:         mRacer.SexPosition,
 			AgeCategoryPosition: mRacer.AgeCategoryPosition,
 			AgeCategoryID:       catId,
 			Time:                mRacer.Time,
+			Sex:                 mRacer.Sex,
 		}
 
 		db.orm.Create(&result)
@@ -282,39 +256,31 @@ func (db *Db) GetBirthDateRangeForCategory(raceDate time.Time, ageCategory strin
 
 func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 
-	rows, err := db.orm.Table("race_result").
-		Select("race.year, race.month, race.day, age_category.name").
-		Joins("join race on race_result.race_id = race.id join racer on race_result.racer_id = racer.id join age_category on age_category.id = race_result.age_category_id").
-		Where("race_result.racer_id = ?", id).
-		Rows()
+	rows, err := db.orm.Raw(fmt.Sprintf("SELECT race.date, age_category.name FROM race LEFT JOIN (race_result, age_category) ON (race_result.race_id = race.id AND age_category.id = race_result.age_category_id) WHERE race_result.racer_id = %d ORDER BY race.date ASC", id)).Rows()
 
 	if err != nil {
 		log.Println(err)
 	}
 
 	var (
-		year   int
-		month  int
-		day    int
-		agecat string
+		raceDate        time.Time
+		ageCategoryName string
 	)
 
-	var results AgeResults
+	var results []AgeResult
 
 	for rows.Next() {
-		err := rows.Scan(&year, &month, &day, &agecat)
+		err := rows.Scan(&raceDate, &ageCategoryName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		xx := AgeResult{
+			RaceDate:    raceDate,
+			AgeCategory: ageCategoryName,
+		}
 
-		results = append(results, AgeResult{
-			RaceDate:    time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
-			AgeCategory: agecat,
-		})
+		results = append(results, xx)
 	}
-
-	//sort the results from earliest to latest
-	sort.Sort(results)
 
 	var high time.Time
 	var low time.Time
@@ -355,7 +321,7 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 	db.orm.Find(&r, raceid)
 
 	rows, err := db.orm.Table("race_result").
-		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, racer.first_name, racer.last_name, racer.id, race_result.id, racer.sex, race_result.age_category_id").
+		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id").
 		Joins("join racer on race_result.racer_id = racer.id").
 		Where("race_result.race_id = ?", r.ID).
 		Rows()
@@ -370,12 +336,11 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 		sexposition         int
 		agecategoryposition int
 		bibnumber           string
-		firstname           string
-		lastname            string
 		racerid             int
 		raceresultid        int
 		sex                 string
 		agecat              int
+		racername           string
 	)
 
 	var results []RaceResult
@@ -384,7 +349,7 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 	races = append(races, r)
 
 	for rows.Next() {
-		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &firstname, &lastname, &racerid, &raceresultid, &sex, &agecat)
+		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -399,15 +364,14 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 			RacerID:             racerid,
 			BibNumber:           bibnumber,
 			AgeCategoryID:       agecat,
+			Name:                racername,
+			Sex:                 sex,
 		}
 
 		results = append(results, xx)
 
 		racers = append(racers, Racer{
-			ID:        racerid,
-			FirstName: firstname,
-			LastName:  lastname,
-			Sex:       sex,
+			ID: racerid,
 		})
 	}
 
@@ -425,7 +389,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	db.orm.Find(&r, racerid)
 
 	rows, err := db.orm.Table("race_result").
-		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race.name,  race.id, race_result.id, race.year, race.month, race.day, race_result.age_category_id").
+		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, race.name,  race.id, race_result.id, race.date, race_result.age_category_id").
 		Joins("join race on race_result.race_id = race.id").
 		Where("race_result.racer_id = ?", r.ID).
 		Rows()
@@ -435,18 +399,17 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	}
 
 	var (
-		time                string
+		raceresulttime      string
 		position            int
 		sexposition         int
 		agecategoryposition int
 		bibnumber           string
-		name                string
+		racename            string
+		racername           string
 		raceid              int
 		raceresultid        int
-		year                int
-		month               int
-		day                 int
 		agecat              int
+		raceDate            time.Time
 	)
 
 	var results []RaceResult
@@ -456,14 +419,14 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	racers = append(racers, r)
 
 	for rows.Next() {
-		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &name, &raceid, &raceresultid, &year, &month, &day, &agecat)
+		err := rows.Scan(&raceresulttime, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racename, &raceid, &raceresultid, &raceDate, &agecat)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		xx := RaceResult{
 			ID:                  raceresultid,
-			Time:                time,
+			Time:                raceresulttime,
 			Position:            position,
 			SexPosition:         sexposition,
 			AgeCategoryPosition: agecategoryposition,
@@ -471,16 +434,15 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 			RacerID:             r.ID,
 			BibNumber:           bibnumber,
 			AgeCategoryID:       agecat,
+			Name:                racername,
 		}
 
 		results = append(results, xx)
 
 		races = append(races, Race{
-			ID:    raceid,
-			Name:  name,
-			Year:  year,
-			Month: month,
-			Day:   day,
+			ID:   raceid,
+			Name: racename,
+			Date: raceDate,
 		})
 	}
 

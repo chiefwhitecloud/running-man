@@ -109,9 +109,6 @@ func (r *FeedResource) GetRacerProfile(res http.ResponseWriter, req *http.Reques
 	lowBirthDate, highBirthDate, _ := r.Db.GetRacerBirthDates(racerId)
 
 	racerProfile := api.RacerProfile{
-		FirstName:     racer.FirstName,
-		LastName:      racer.LastName,
-		Sex:           racer.Sex,
 		SelfPath:      fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
 		BirthDateLow:  fmt.Sprintf("%0.4d-%0.2d-%0.2d", lowBirthDate.Year(), lowBirthDate.Month(), lowBirthDate.Day()),
 		BirthDateHigh: fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day()),
@@ -187,15 +184,12 @@ func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 		Name:        race.Name,
 		SelfPath:    fmt.Sprintf("http://%s/feed/race/%d", req.Host, race.ID),
 		ResultsPath: fmt.Sprintf("http://%s/feed/race/%d/results", req.Host, race.ID),
-		Date:        fmt.Sprintf("%0.4d-%0.2d-%0.2d", race.Year, race.Month, race.Day),
+		Date:        fmt.Sprintf("%0.4d-%0.2d-%0.2d", race.Date.Year(), race.Date.Month(), race.Date.Day()),
 	}
 }
 
 func (r *FeedResource) formatRacerForFeed(req *http.Request, racer database.Racer) api.Racer {
 	return api.Racer{
-		FirstName:   racer.FirstName,
-		LastName:    racer.LastName,
-		Sex:         racer.Sex,
 		SelfPath:    fmt.Sprintf("http://%s/feed/racer/%d", req.Host, racer.ID),
 		ResultsPath: fmt.Sprintf("http://%s/feed/racer/%d/results", req.Host, racer.ID),
 		ProfilePath: fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
@@ -230,6 +224,7 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 	rr := make([]api.RaceResult, len(raceresults))
 	for i := range raceresults {
 		rr[i] = api.RaceResult{
+			Name:                raceresults[i].Name,
 			Position:            raceresults[i].Position,
 			SexPosition:         raceresults[i].SexPosition,
 			AgeCategoryPosition: raceresults[i].AgeCategoryPosition,

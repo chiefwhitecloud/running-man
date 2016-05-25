@@ -13,9 +13,6 @@ type Race struct {
 }
 
 type Racer struct {
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	Sex         string `json:"sex"`
 	SelfPath    string `json:"selfPath"`
 	ResultsPath string `json:"resultsPath"`
 	ProfilePath string `json:"profilePath"`
@@ -37,6 +34,7 @@ type RaceResults struct {
 }
 
 type RaceResult struct {
+	Name                string `json:name`
 	Time                string `json:"time"`
 	Position            int    `json:"position"`
 	SexPosition         int    `json:"sexPosition"`

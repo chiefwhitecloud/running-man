@@ -3,6 +3,7 @@ package dataimport
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/chiefwhitecloud/running-man/model"
 	"golang.org/x/net/html"
 	"log"
@@ -125,8 +126,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 			ap, _ := strconv.Atoi(md["category_position"])
 
 			racerResults = append(racerResults, model.Racer{Position: p,
-				FirstName:           md["first_name"],
-				LastName:            md["last_name"],
+				Name:                fmt.Sprintf("%s %s", md["first_name"], md["last_name"]),
 				BibNumber:           md["bib_number"],
 				Club:                md["club"],
 				Time:                md["time"],

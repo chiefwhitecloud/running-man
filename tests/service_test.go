@@ -116,8 +116,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	//check the race and racers map
 	c.Assert(raceResults.Results[0].RacerID, Equals, "1")
 	c.Assert(raceResults.Results[0].RaceID, Equals, "1")
-	c.Assert(raceResults.Racers["1"].FirstName, Equals, "JORDAN")
-	c.Assert(raceResults.Racers["1"].LastName, Equals, "FEWER")
+	c.Assert(raceResults.Results[0].Name, Equals, "JORDAN FEWER")
 	c.Assert(len(raceResults.Racers), Equals, 9)
 	c.Assert(len(raceResults.Races), Equals, 1)
 	c.Assert(raceResults.Races["1"].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
@@ -130,9 +129,6 @@ func (s *TestSuite) Test01Import(c *C) {
 	var jordanRacer api.Racer
 	err = json.Unmarshal(jsonBlob, &jordanRacer)
 	c.Assert(err, Equals, nil)
-	c.Assert(jordanRacer.FirstName, Equals, "JORDAN")
-	c.Assert(jordanRacer.LastName, Equals, "FEWER")
-	c.Assert(jordanRacer.Sex, Equals, "M")
 	c.Assert(jordanRacer.ProfilePath, Equals, s.host+"/feed/racer/1/profile")
 
 	jordanProfilePath := raceResults.Racers["1"].ProfilePath
@@ -185,9 +181,6 @@ func (s *TestSuite) Test01Import(c *C) {
 	var joeDunfordRacer api.Racer
 	err = json.Unmarshal(jsonBlob, &joeDunfordRacer)
 	c.Assert(err, Equals, nil)
-	c.Assert(joeDunfordRacer.FirstName, Equals, "JOE")
-	c.Assert(joeDunfordRacer.LastName, Equals, "DUNFORD")
-	c.Assert(joeDunfordRacer.Sex, Equals, "M")
 
 	joeDunfordProfilePath := joeDunfordRacer.ProfilePath
 	resp, body, _ = request.Get(joeDunfordProfilePath).End()
