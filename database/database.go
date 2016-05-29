@@ -254,6 +254,30 @@ func (db *Db) GetBirthDateRangeForCategory(raceDate time.Time, ageCategory strin
 
 }
 
+func (db *Db) GetRacerNames(id int) ([]string, error) {
+
+	rows, err := db.orm.Raw(fmt.Sprintf("SELECT race_result.name FROM race_result LEFT JOIN (race) ON (race.id = race_result.race_id) WHERE race_result.racer_id = %d GROUP BY race_result.name ORDER BY race.date DESC", id)).Rows()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	var name string
+
+	var results []string
+
+	for rows.Next() {
+		err := rows.Scan(&name)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		results = append(results, name)
+	}
+
+	return results, nil
+}
+
 func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 
 	rows, err := db.orm.Raw(fmt.Sprintf("SELECT race.date, age_category.name FROM race LEFT JOIN (race_result, age_category) ON (race_result.race_id = race.id AND age_category.id = race_result.age_category_id) WHERE race_result.racer_id = %d ORDER BY race.date ASC", id)).Rows()

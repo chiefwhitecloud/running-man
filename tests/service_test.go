@@ -138,6 +138,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	var jordanRacerProfile api.RacerProfile
 	err = json.Unmarshal(jsonBlob, &jordanRacerProfile)
 	c.Assert(err, Equals, nil)
+	c.Assert(jordanRacerProfile.Name, Equals, "JORDAN FEWER")
 	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-13")
 	c.Assert(jordanRacerProfile.BirthDateHigh, Equals, "1995-04-12")
 
@@ -189,6 +190,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	var joeDunfordProfile api.RacerProfile
 	err = json.Unmarshal(jsonBlob, &joeDunfordProfile)
 	c.Assert(err, Equals, nil)
+	c.Assert(joeDunfordProfile.Name, Equals, "JOE DUNFORD")
 	c.Assert(joeDunfordProfile.BirthDateLow, Equals, "1965-04-13")
 	c.Assert(joeDunfordProfile.BirthDateHigh, Equals, "1965-04-26")
 

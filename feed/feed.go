@@ -107,9 +107,13 @@ func (r *FeedResource) GetRacerProfile(res http.ResponseWriter, req *http.Reques
 	racer, err := r.Db.GetRacer(racerId)
 
 	lowBirthDate, highBirthDate, _ := r.Db.GetRacerBirthDates(racerId)
+	names, _ := r.Db.GetRacerNames(racerId)
 
 	racerProfile := api.RacerProfile{
+		Name:          names[0],
+		NameList:      names,
 		SelfPath:      fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
+		MergePath:     fmt.Sprintf("http://%s/feed/racer/%d/merge", req.Host, racer.ID),
 		BirthDateLow:  fmt.Sprintf("%0.4d-%0.2d-%0.2d", lowBirthDate.Year(), lowBirthDate.Month(), lowBirthDate.Day()),
 		BirthDateHigh: fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day()),
 	}

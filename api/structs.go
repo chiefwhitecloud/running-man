@@ -19,12 +19,12 @@ type Racer struct {
 }
 
 type RacerProfile struct {
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
-	Sex           string `json:"sex"`
-	SelfPath      string `json:"selfPath"`
-	BirthDateLow  string `json:"birthDateLow"`
-	BirthDateHigh string `json:"birthDateHigh"`
+	Name          string   `json:"name"`
+	NameList      []string `json:"nameList"`
+	MergePath     string   `json:"mergePath"`
+	SelfPath      string   `json:"selfPath"`
+	BirthDateLow  string   `json:"birthDateLow"`
+	BirthDateHigh string   `json:"birthDateHigh"`
 }
 
 type RaceResults struct {
