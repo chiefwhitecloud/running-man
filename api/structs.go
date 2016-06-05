@@ -4,6 +4,10 @@ type DataImport struct {
 	RaceUrl string `json:"raceUrl"`
 }
 
+type RacerMerge struct {
+	RacerId string `json:"racerId"`
+}
+
 type Race struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
@@ -13,15 +17,16 @@ type Race struct {
 }
 
 type Racer struct {
+	Id          int    `json:id`
 	SelfPath    string `json:"selfPath"`
 	ResultsPath string `json:"resultsPath"`
 	ProfilePath string `json:"profilePath"`
+	MergePath   string `json:"mergePath"`
 }
 
 type RacerProfile struct {
 	Name          string   `json:"name"`
 	NameList      []string `json:"nameList"`
-	MergePath     string   `json:"mergePath"`
 	SelfPath      string   `json:"selfPath"`
 	BirthDateLow  string   `json:"birthDateLow"`
 	BirthDateHigh string   `json:"birthDateHigh"`

@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
@@ -10,6 +11,7 @@ import (
 	. "gopkg.in/check.v1"
 	"log"
 	"os"
+	"strconv"
 )
 
 var _ = fmt.Print
@@ -97,7 +99,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	var raceResults api.RaceResults
 	err = json.Unmarshal(jsonBlob, &raceResults)
 	c.Assert(err, Equals, nil)
-	c.Assert(len(raceResults.Results), Equals, 9)
+	c.Assert(len(raceResults.Results), Equals, 10)
 
 	//results should be order.
 	c.Assert(raceResults.Results[0].Position, Equals, 1)
@@ -117,38 +119,28 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(raceResults.Results[0].RacerID, Equals, "1")
 	c.Assert(raceResults.Results[0].RaceID, Equals, "1")
 	c.Assert(raceResults.Results[0].Name, Equals, "JORDAN FEWER")
-	c.Assert(len(raceResults.Racers), Equals, 9)
+	c.Assert(len(raceResults.Racers), Equals, 10)
 	c.Assert(len(raceResults.Races), Equals, 1)
-	c.Assert(raceResults.Races["1"].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
+	c.Assert(raceResults.Races[raceResults.Results[0].RaceID].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
+
+	andreaSparkesId := raceResults.Racers[raceResults.Results[9].RacerID].Id
 
 	//fetch the racer
-	jordanSelfPath := raceResults.Racers["1"].SelfPath
-	resp, body, _ = request.Get(jordanSelfPath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
+	jordanSelfPath := raceResults.Racers[raceResults.Results[0].RacerID].SelfPath
 	var jordanRacer api.Racer
-	err = json.Unmarshal(jsonBlob, &jordanRacer)
-	c.Assert(err, Equals, nil)
+	s.doRequest(jordanSelfPath, &jordanRacer)
 	c.Assert(jordanRacer.ProfilePath, Equals, s.host+"/feed/racer/1/profile")
 
-	jordanProfilePath := raceResults.Racers["1"].ProfilePath
-	resp, body, _ = request.Get(jordanProfilePath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
 	var jordanRacerProfile api.RacerProfile
-	err = json.Unmarshal(jsonBlob, &jordanRacerProfile)
-	c.Assert(err, Equals, nil)
+	var jordanProfilePath = jordanRacer.ProfilePath
+	s.doRequest(jordanProfilePath, &jordanRacerProfile)
 	c.Assert(jordanRacerProfile.Name, Equals, "JORDAN FEWER")
 	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-13")
 	c.Assert(jordanRacerProfile.BirthDateHigh, Equals, "1995-04-12")
 
 	//fetch the racer results
 	jordanResults := jordanRacer.ResultsPath
-	resp, body, _ = request.Get(jordanResults).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &raceResults)
-	c.Assert(err, Equals, nil)
+	s.doRequest(jordanResults, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 1)
 
 	//import another race
@@ -164,14 +156,11 @@ func (s *TestSuite) Test01Import(c *C) {
 	raceResultsPath = race.ResultsPath
 
 	//fetch race results
-	resp, body, _ = request.Get(raceResultsPath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &raceResults)
-	c.Assert(err, Equals, nil)
-	c.Assert(len(raceResults.Results), Equals, 11)
+	s.doRequest(raceResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 12)
 
 	slowChrisResultsPath := raceResults.Racers[raceResults.Results[10].RacerID].ResultsPath
+	andreaWhiteResultsPath := raceResults.Racers[raceResults.Results[11].RacerID].ResultsPath
 
 	//check joe's bday
 	c.Assert(raceResults.Results[9].Position, Equals, 10)
@@ -183,48 +172,60 @@ func (s *TestSuite) Test01Import(c *C) {
 	err = json.Unmarshal(jsonBlob, &joeDunfordRacer)
 	c.Assert(err, Equals, nil)
 
-	joeDunfordProfilePath := joeDunfordRacer.ProfilePath
-	resp, body, _ = request.Get(joeDunfordProfilePath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
 	var joeDunfordProfile api.RacerProfile
-	err = json.Unmarshal(jsonBlob, &joeDunfordProfile)
-	c.Assert(err, Equals, nil)
+	s.doRequest(joeDunfordRacer.ProfilePath, &joeDunfordProfile)
 	c.Assert(joeDunfordProfile.Name, Equals, "JOE DUNFORD")
 	c.Assert(joeDunfordProfile.BirthDateLow, Equals, "1965-04-13")
 	c.Assert(joeDunfordProfile.BirthDateHigh, Equals, "1965-04-26")
 
 	//fetch the racer results
-	joeDunfordResults := joeDunfordRacer.ResultsPath
-	resp, body, _ = request.Get(joeDunfordResults).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &raceResults)
-	c.Assert(err, Equals, nil)
+	s.doRequest(joeDunfordRacer.ResultsPath, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 2)
 
 	//jordan should have two results
-	resp, body, _ = request.Get(jordanResults).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &raceResults)
-	c.Assert(err, Equals, nil)
+	s.doRequest(jordanResults, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 2)
 
 	//his birthdate range should be updated.
-	resp, body, _ = request.Get(jordanProfilePath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &jordanRacerProfile)
+	s.doRequest(jordanProfilePath, &jordanRacerProfile)
 	c.Assert(jordanRacerProfile.BirthDateLow, Equals, "1985-04-27")
 	c.Assert(jordanRacerProfile.BirthDateHigh, Equals, "1995-04-12")
 
 	//slow chris should only have one result
-	resp, body, _ = request.Get(slowChrisResultsPath).End()
-	c.Assert(resp.StatusCode, Equals, 200)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &raceResults)
-	c.Assert(err, Equals, nil)
+	s.doRequest(slowChrisResultsPath, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 1)
 
+	//andrea should only have one race result
+	s.doRequest(andreaWhiteResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 1)
+	c.Assert(raceResults.Racers[raceResults.Results[0].RacerID].MergePath, Not(Equals), "")
+
+	//merge andrea white and andrea sparkes
+	andreaWhiteMergePath := raceResults.Racers[raceResults.Results[0].RacerID].MergePath
+	var merge = api.RacerMerge{RacerId: strconv.Itoa(andreaSparkesId)}
+	resp, body, _ = request.Post(andreaWhiteMergePath).
+		Send(merge).
+		End()
+
+	s.doRequest(andreaWhiteResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 2)
+
+}
+
+func (s *TestSuite) doRequest(path string, entity interface{}) error {
+
+	request := gorequest.New()
+
+	resp, body, _ := request.Get(path).End()
+
+	if resp.StatusCode != 200 {
+		return errors.New("Bad request")
+	}
+
+	jsonBlob := []byte(body)
+	if errs := json.Unmarshal(jsonBlob, entity); errs != nil {
+		return errs
+	}
+
+	return nil
 }

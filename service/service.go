@@ -76,6 +76,7 @@ func (s *RunningManService) Run() error {
 	r.HandleFunc("/feed/racer/{id}", feeds.GetRacer).Methods("GET")
 	r.HandleFunc("/feed/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
 	r.HandleFunc("/feed/racer/{id}/profile", feeds.GetRacerProfile).Methods("GET")
+	r.HandleFunc("/feed/racer/{id}/merge", feeds.MergeRacer).Methods("POST")
 	r.HandleFunc("/", ui.GetDefaultTemplate).Methods("GET")
 
 	http.Handle("/", r)

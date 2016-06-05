@@ -207,6 +207,12 @@ func (db *Db) GetRacer(id int) (Racer, error) {
 	return racer, nil
 }
 
+func (db *Db) MergeRacers(parentRacer Racer, racer Racer) (Racer, error) {
+	//update all race results with the new id
+	db.orm.Exec("UPDATE race_result SET racer_id=? WHERE racer_id =?", parentRacer.ID, racer.ID)
+	return parentRacer, nil
+}
+
 func (db *Db) isAgeRangeWithinCatgory(minAge int, maxAge int, ageCategory string) bool {
 	catMinAge, catMaxAge, _ := db.GetMinMaxAgeForCategory(ageCategory)
 	return minAge >= catMinAge && maxAge <= catMaxAge
