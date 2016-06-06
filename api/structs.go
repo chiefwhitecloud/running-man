@@ -17,7 +17,7 @@ type Race struct {
 }
 
 type Racer struct {
-	Id          int    `json:id`
+	Id          int    `json:"id"`
 	SelfPath    string `json:"selfPath"`
 	ResultsPath string `json:"resultsPath"`
 	ProfilePath string `json:"profilePath"`
