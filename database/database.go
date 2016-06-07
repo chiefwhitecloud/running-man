@@ -419,7 +419,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	db.orm.Find(&r, racerid)
 
 	rows, err := db.orm.Table("race_result").
-		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, race.name,  race.id, race_result.id, race.date, race_result.age_category_id").
+		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, race.name,  race.id, race_result.id,  race_result.sex, race.date, race_result.age_category_id").
 		Joins("join race on race_result.race_id = race.id").
 		Where("race_result.racer_id = ?", r.ID).
 		Rows()
@@ -440,6 +440,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 		raceresultid        int
 		agecat              int
 		raceDate            time.Time
+		sex                 string
 	)
 
 	var results []RaceResult
@@ -449,7 +450,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	racers = append(racers, r)
 
 	for rows.Next() {
-		err := rows.Scan(&raceresulttime, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racename, &raceid, &raceresultid, &raceDate, &agecat)
+		err := rows.Scan(&raceresulttime, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racename, &raceid, &raceresultid, &sex, &raceDate, &agecat)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -465,6 +466,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 			BibNumber:           bibnumber,
 			AgeCategoryID:       agecat,
 			Name:                racername,
+			Sex: 		             sex,
 		}
 
 		results = append(results, xx)

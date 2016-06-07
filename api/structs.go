@@ -39,7 +39,7 @@ type RaceResults struct {
 }
 
 type RaceResult struct {
-	Name                string `json:name`
+	Name                string `json:"name"`
 	Time                string `json:"time"`
 	Position            int    `json:"position"`
 	SexPosition         int    `json:"sexPosition"`
@@ -48,6 +48,7 @@ type RaceResult struct {
 	RaceID              string `json:"raceId"`
 	BibNumber           string `json:"bibNumber"`
 	AgeCategory         string `json:"ageCategory"`
+	Sex                 string `json:"sex"`
 }
 
 type RaceFeed struct {

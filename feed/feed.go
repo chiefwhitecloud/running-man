@@ -281,6 +281,7 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 			Name:                raceresults[i].Name,
 			Position:            raceresults[i].Position,
 			SexPosition:         raceresults[i].SexPosition,
+			Sex:                 raceresults[i].Sex,
 			AgeCategoryPosition: raceresults[i].AgeCategoryPosition,
 			RacerID:             strconv.Itoa(raceresults[i].RacerID),
 			RaceID:              strconv.Itoa(raceresults[i].RaceID),
