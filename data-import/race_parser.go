@@ -3,13 +3,13 @@ package dataimport
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"github.com/chiefwhitecloud/running-man/model"
-	"golang.org/x/net/html"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/chiefwhitecloud/running-man/model"
+	"golang.org/x/net/html"
 )
 
 var _ = log.Print
@@ -97,13 +97,13 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
 
-	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<first_name>[a-zA-Z0-9]+)\\s(?P<last_name>[a-zA-Z0-9]+)(\\s(\\((?P<club>[A-Z]+)\\))?)\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
-
-	n1 := re.SubexpNames()
+	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
 
 	if err != nil {
-		log.Println(err)
+		return model.RaceDetails{}, errors.New("Failed to read race result regex")
 	}
+
+	n1 := re.SubexpNames()
 
 	raceRows := strings.Split(results, "\n")
 
@@ -126,7 +126,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 			ap, _ := strconv.Atoi(md["category_position"])
 
 			racerResults = append(racerResults, model.Racer{Position: p,
-				Name:                fmt.Sprintf("%s %s", md["first_name"], md["last_name"]),
+				Name:                md["name"],
 				BibNumber:           md["bib_number"],
 				Club:                md["club"],
 				Time:                md["time"],
@@ -136,6 +136,10 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				AgeCategoryPosition: ap,
 			})
 		}
+	}
+
+	if len(racerResults) == 0 {
+		return model.RaceDetails{}, errors.New("Failed to parse race results")
 	}
 
 	race := model.RaceDetails{Racers: racerResults, Name: resultsTitle, Year: raceYear, Month: raceMonth, Day: raceDay}

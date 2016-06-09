@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
 	"github.com/chiefwhitecloud/running-man/service"
 	"github.com/parnurzeal/gorequest"
 	. "gopkg.in/check.v1"
-	"log"
-	"os"
-	"strconv"
 )
 
 var _ = fmt.Print
@@ -157,7 +158,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//fetch race results
 	s.doRequest(raceResultsPath, &raceResults)
-	c.Assert(len(raceResults.Results), Equals, 12)
+	c.Assert(len(raceResults.Results), Equals, 14)
 
 	slowChrisResultsPath := raceResults.Racers[raceResults.Results[10].RacerID].ResultsPath
 	andreaWhiteResultsPath := raceResults.Racers[raceResults.Results[11].RacerID].ResultsPath
@@ -203,7 +204,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	//merge andrea white and andrea sparkes
 	andreaWhiteMergePath := raceResults.Racers[raceResults.Results[0].RacerID].MergePath
 	var merge = api.RacerMerge{RacerId: strconv.Itoa(andreaSparkesId)}
-	resp, body, _ = request.Post(andreaWhiteMergePath).
+	resp, _, _ = request.Post(andreaWhiteMergePath).
 		Send(merge).
 		End()
 
