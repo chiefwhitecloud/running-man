@@ -11,23 +11,23 @@ type RacerMerge struct {
 type Race struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
-	SelfPath    string `json:"selfPath"`
-	ResultsPath string `json:"resultsPath"`
+	SelfPath    string `json:"self"`
+	ResultsPath string `json:"results"`
 	Date        string `json:"date"`
 }
 
 type Racer struct {
 	Id          int    `json:"id"`
-	SelfPath    string `json:"selfPath"`
-	ResultsPath string `json:"resultsPath"`
-	ProfilePath string `json:"profilePath"`
+	SelfPath    string `json:"self"`
+	ResultsPath string `json:"results"`
+	ProfilePath string `json:"profile"`
 	MergePath   string `json:"mergePath"`
 }
 
 type RacerProfile struct {
 	Name          string   `json:"name"`
 	NameList      []string `json:"nameList"`
-	SelfPath      string   `json:"selfPath"`
+	SelfPath      string   `json:"self"`
 	BirthDateLow  string   `json:"birthDateLow"`
 	BirthDateHigh string   `json:"birthDateHigh"`
 }
