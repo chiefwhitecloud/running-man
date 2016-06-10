@@ -38,11 +38,23 @@ $ ./running-man serve
 ### Importing Race Results
 
 ```sh
- curl -X POST http://localhost:8080/import -H "Accept: application/json" -d '{"raceUrl":"http://www.nlaa.ca/results/rr/2015/20150412flatout5k.php"}'
+ curl -X POST http://localhost/import -H "Content-Type: application/json" -d '{"raceUrl":"http://www.nlaa.ca/results/rr/2015/20150412flatout5k.php"}'
+```
+
+If successful returns a status of 201 and the race json structure
+
+```
+  {
+    "id":1,
+    "name":"Boston Pizza Flat Out 5 km Road Race",
+    "self":"http://localhost/feed/race/1",
+    "results":"http://localhost/feed/race/1/results",
+    "date":"2015-04-12"
+  }
 ```
 
 ### List Races
 
 ```sh
- curl http://localhost:8080/races
+ curl http://localhost/feed/races
 ```
