@@ -38,7 +38,9 @@ $ ./running-man serve
 ### Importing Race Results
 
 ```sh
- curl -X POST http://localhost/import -H "Content-Type: application/json" -d '{"raceUrl":"http://www.nlaa.ca/results/rr/2015/20150412flatout5k.php"}'
+ curl -X POST http://localhost/import 
+    -H "Content-Type: application/json" 
+    -d '{"raceUrl":"http://www.nlaa.ca/results/rr/2015/20150412flatout5k.php"}'
 ```
 
 If successful returns a status of 201 and the race json structure
