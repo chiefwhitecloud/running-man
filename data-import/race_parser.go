@@ -98,12 +98,14 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	}
 
 	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
+	re2, err := regexp.Compile("^\\s{0,}(?P<position>\\d+)\\s{2,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{1,}L(?P<sex>M|F|W)(?P<category>-19|80\\+|A|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)\\/[\\d]+\\s{2,}(?P<sex_pos>\\d+)")
 
 	if err != nil {
 		return model.RaceDetails{}, errors.New("Failed to read race result regex")
 	}
 
 	n1 := re.SubexpNames()
+	n2 := re2.SubexpNames()
 
 	raceRows := strings.Split(results, "\n")
 
@@ -112,12 +114,26 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	var racerResults []model.Racer
 
 	for i := range raceRows {
-		r2 := re.FindAllStringSubmatch(raceRows[i], -1)
-		if len(r2) > 0 {
-			md := map[string]string{}
+
+		var r2 [][]string
+
+		md := map[string]string{}
+
+		if re.MatchString(raceRows[i]) {
+			r2 = re.FindAllStringSubmatch(raceRows[i], -1)
 			for i, n := range r2[0] {
 				md[n1[i]] = n
 			}
+		} else if re2.MatchString(raceRows[i]) {
+			r2 = re2.FindAllStringSubmatch(raceRows[i], -1)
+			for i, n := range r2[0] {
+				md[n2[i]] = n
+			}
+		} else {
+			log.Println("Failed to parse " + raceRows[i])
+		}
+
+		if len(r2) > 0 {
 
 			p, _ := strconv.Atoi(md["position"])
 

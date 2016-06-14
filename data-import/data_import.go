@@ -2,11 +2,12 @@ package dataimport
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
 	"github.com/chiefwhitecloud/running-man/feed"
-	"log"
-	"net/http"
 )
 
 var _ = log.Print
@@ -24,13 +25,15 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 	err := decoder.Decode(&dataimport)
 
 	if err != nil {
-		http.Error(res, err.Error(), 500)
+		http.Error(res, "Invalid parameter", 400)
+		return
 	}
 
 	results, err := r.RaceFetcher.GetRawResults(dataimport.RaceUrl)
 
 	if err != nil {
-		http.Error(res, err.Error(), 500)
+		http.Error(res, "Failed to fetch race results", 500)
+		return
 	}
 
 	//parse the race results from the html string
@@ -38,6 +41,7 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
+		return
 	}
 
 	race, err := r.Db.SaveRace(&raceDetails)

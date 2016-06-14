@@ -213,6 +213,45 @@ func (s *TestSuite) Test01Import(c *C) {
 
 }
 
+// Simple import
+func (s *TestSuite) Test02ImportTely(c *C) {
+
+	//import a race
+
+	request := gorequest.New()
+	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
+		Send(`{"raceUrl":"http://www.nlaa.ca/02-Tely.html"}`).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+
+	var race api.Race
+	jsonBlob := []byte(body)
+	_ = json.Unmarshal(jsonBlob, &race)
+	c.Assert(race.Name, Equals, "88th Annual Tely 10 Mile Road Race")
+	c.Assert(race.Id, Equals, 1)
+
+	// fetch the race list
+	resp, body, _ = request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	jsonBlob = []byte(body)
+	var races api.RaceFeed
+	_ = json.Unmarshal(jsonBlob, &races)
+
+	c.Assert(len(races.Races), Equals, 1)
+	c.Assert(races.Races[0].Name, Equals, "88th Annual Tely 10 Mile Road Race")
+	c.Assert(races.Races[0].SelfPath, Equals, s.host+"/feed/race/1")
+	c.Assert(races.Races[0].ResultsPath, Equals, s.host+"/feed/race/1/results")
+	c.Assert(races.Races[0].Date, Equals, "2015-07-26")
+
+	var raceResults api.RaceResults
+	s.doRequest(races.Races[0].ResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 38)
+	c.Assert(len(raceResults.Racers), Equals, 38)
+	c.Assert(raceResults.Results[0].AgeCategoryPosition, Equals, 1)
+
+}
+
 func (s *TestSuite) doRequest(path string, entity interface{}) error {
 
 	request := gorequest.New()

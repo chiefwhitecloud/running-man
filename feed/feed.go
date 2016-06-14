@@ -3,12 +3,13 @@ package feed
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chiefwhitecloud/running-man/api"
-	"github.com/chiefwhitecloud/running-man/database"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/chiefwhitecloud/running-man/api"
+	"github.com/chiefwhitecloud/running-man/database"
+	"github.com/gorilla/mux"
 )
 
 var _ = log.Print
@@ -254,16 +255,36 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 
 	ageMap := map[int]string{
 		1:  "U20",
-		2:  "20-29",
-		3:  "30-39",
-		4:  "40-49",
-		5:  "50-59",
-		6:  "60-69",
-		7:  "70-79",
-		8:  "80-89",
-		9:  "90-99",
-		10: "100-109",
+		2:  "-19",
+		3:  "20-24",
+		4:  "25-29",
+		5:  "20-29",
+		6:  "30-34",
+		7:  "35-39",
+		8:  "30-39",
+		9:  "40-44",
+		10: "45-49",
+		11: "40-49",
+		12: "50-54",
+		13: "55-59",
+		14: "50-59",
+		15: "60-64",
+		16: "65-69",
+		17: "60-69",
+		18: "70-74",
+		19: "75-79",
+		20: "70-79",
+		21: "80-84",
+		22: "85-89",
+		23: "80-89",
+		24: "80+",
+		25: "A",
 	}
+
+	//	"80-84", "85-89", "80-89",
+	//	"90-94", "95-99", "90-99",
+	//		"100-104", "105-109", "100-109",
+	//	}
 
 	mapRacers := map[string]api.Racer{}
 	for i := range racers {

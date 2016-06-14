@@ -1,12 +1,14 @@
 package database
 
 import (
+	"errors"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/chiefwhitecloud/running-man/model"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"log"
-	"time"
 )
 
 type Db struct {
@@ -65,7 +67,17 @@ type AgeResult struct {
 func (db *Db) Migrate() {
 	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
 
-	cats := []string{"U20", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99", "100-109"}
+	cats := []string{
+		"U20", "-19",
+		"20-24", "25-29", "20-29",
+		"30-34", "35-39", "30-39",
+		"40-44", "45-49", "40-49",
+		"50-54", "55-59", "50-59",
+		"60-64", "65-69", "60-69",
+		"70-74", "75-79", "70-79",
+		"80-84", "85-89", "80-89",
+		"80+", "A",
+	}
 
 	for i := 0; i < len(cats); i++ {
 		cat := AgeCategory{Name: cats[i]}
@@ -138,26 +150,35 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 				//a runnner with same name already ran this race.
 				// FIX ME:  Needs to check their aliases too
-				rows, _ := db.orm.Raw("SELECT race_result.racer_id FROM race_result WHERE race_result.name = ? AND race_result.race_id = ? AND race_result.age_category_id = ?", mRacer.Name, race.ID, catId).Rows()
+				rows, _ := db.orm.Raw("SELECT race_result.racer_id FROM race_result WHERE race_result.name = ? AND race_result.race_id = ?", mRacer.Name, race.ID).Rows()
 				defer rows.Close()
 
-				found := false
+				mustBeNewRacer := false
 
 				for rows.Next() {
 					var uid int
 					_ = rows.Scan(&uid)
-					found = true
+					mustBeNewRacer = true
 				}
 
-				//look at the racers age catgory history... does it look like a match?
-				early, late, _ := db.GetRacerBirthDates(raceResults[i].RacerID)
-				minAge, maxAge, _ := db.GetAgeRangeOnDate(early, late, raceDate)
-
-				//check to see if the race is within the same age category
-				if db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory) && !found {
-					//existing racer is found
-					db.orm.Where(&Racer{ID: raceResults[i].RacerID}).Find(&racer)
+				if mustBeNewRacer {
 					break
+				} else {
+					//look at the racers age catgory history... does it look like a match?
+					early, late, _ := db.GetRacerBirthDates(raceResults[i].RacerID)
+					minAge, maxAge, _ := db.GetAgeRangeOnDate(early, late, raceDate)
+
+					//check to see if the race is within the same age category
+					ok, err := db.isAgeRangeWithinCatgory(maxAge, minAge, mRacer.AgeCategory)
+
+					if err != nil {
+						return race, err
+					}
+					if ok {
+						//existing racer is found
+						db.orm.Where(&Racer{ID: raceResults[i].RacerID}).Find(&racer)
+						break
+					}
 				}
 			}
 
@@ -213,28 +234,50 @@ func (db *Db) MergeRacers(parentRacer Racer, racer Racer) (Racer, error) {
 	return parentRacer, nil
 }
 
-func (db *Db) isAgeRangeWithinCatgory(minAge int, maxAge int, ageCategory string) bool {
-	catMinAge, catMaxAge, _ := db.GetMinMaxAgeForCategory(ageCategory)
-	return minAge >= catMinAge && maxAge <= catMaxAge
+func (db *Db) isAgeRangeWithinCatgory(minAge int, maxAge int, ageCategory string) (bool, error) {
+	catMinAge, catMaxAge, err := db.GetMinMaxAgeForCategory(ageCategory)
+
+	if err != nil {
+		return false, err
+	} else {
+		return minAge >= catMinAge && maxAge <= catMaxAge, nil
+	}
+
 }
 
 func (db *Db) GetMinMaxAgeForCategory(ageCategory string) (int, int, error) {
 	ageCategoryMap := map[string]*AgeLookup{
-		"U20":     &AgeLookup{1, 19},
-		"20-29":   &AgeLookup{20, 29},
-		"30-39":   &AgeLookup{30, 39},
-		"40-49":   &AgeLookup{40, 49},
-		"50-59":   &AgeLookup{50, 59},
-		"60-69":   &AgeLookup{60, 69},
-		"70-79":   &AgeLookup{70, 79},
-		"80-89":   &AgeLookup{80, 89},
-		"90-99":   &AgeLookup{90, 99},
-		"100-109": &AgeLookup{100, 109},
+		"U20":   &AgeLookup{5, 19},
+		"-19":   &AgeLookup{5, 19},
+		"20-24": &AgeLookup{20, 24},
+		"25-29": &AgeLookup{25, 29},
+		"20-29": &AgeLookup{20, 29},
+		"30-34": &AgeLookup{30, 34},
+		"35-39": &AgeLookup{35, 39},
+		"30-39": &AgeLookup{30, 39},
+		"40-44": &AgeLookup{40, 44},
+		"45-49": &AgeLookup{45, 49},
+		"40-49": &AgeLookup{40, 49},
+		"50-54": &AgeLookup{50, 54},
+		"55-59": &AgeLookup{55, 59},
+		"50-59": &AgeLookup{50, 59},
+		"60-64": &AgeLookup{60, 64},
+		"65-69": &AgeLookup{65, 69},
+		"60-69": &AgeLookup{60, 69},
+		"70-74": &AgeLookup{70, 74},
+		"75-79": &AgeLookup{75, 79},
+		"70-79": &AgeLookup{70, 79},
+		"80-84": &AgeLookup{80, 84},
+		"85-89": &AgeLookup{85, 89},
+		"80-89": &AgeLookup{80, 89},
+		"80+":   &AgeLookup{80, 100},
+		"A":     &AgeLookup{5, 100},
 	}
-
-	age := ageCategoryMap[ageCategory]
-
-	return age.minAge, age.maxAge, nil
+	if age, ok := ageCategoryMap[ageCategory]; ok {
+		return age.minAge, age.maxAge, nil
+	} else {
+		return 0, 0, errors.New("Failed to find age category " + ageCategory)
+	}
 }
 
 func (db *Db) GetAgeRangeOnDate(earlyBirthDate time.Time, lateBirthDate time.Time, raceDate time.Time) (int, int, error) {
@@ -466,7 +509,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 			BibNumber:           bibnumber,
 			AgeCategoryID:       agecat,
 			Name:                racername,
-			Sex: 		             sex,
+			Sex:                 sex,
 		}
 
 		results = append(results, xx)

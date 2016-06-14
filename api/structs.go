@@ -21,7 +21,7 @@ type Racer struct {
 	SelfPath    string `json:"self"`
 	ResultsPath string `json:"results"`
 	ProfilePath string `json:"profile"`
-	MergePath   string `json:"mergePath"`
+	MergePath   string `json:"merge"`
 }
 
 type RacerProfile struct {

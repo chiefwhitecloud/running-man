@@ -2,12 +2,13 @@ package test
 
 import (
 	"fmt"
-	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"path/filepath"
 	"testing"
+
+	. "gopkg.in/check.v1"
 )
 
 var _ = fmt.Print
@@ -31,6 +32,10 @@ func (c *RaceFetcherStub) GetRawResults(resultsurl string) ([]byte, error) {
 		return byes, nil
 	} else if u.Path == "/01-Road-Race.html" {
 		absPath, _ := filepath.Abs("test-data/01-Road-Race.html")
+		byes, _ := ioutil.ReadFile(absPath)
+		return byes, nil
+	} else if u.Path == "/02-Tely.html" {
+		absPath, _ := filepath.Abs("test-data/02-Tely.html")
 		byes, _ := ioutil.ReadFile(absPath)
 		return byes, nil
 	} else {
