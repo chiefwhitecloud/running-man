@@ -75,8 +75,8 @@ func (db *Db) Migrate() {
 		"50-54", "55-59", "50-59",
 		"60-64", "65-69", "60-69",
 		"70-74", "75-79", "70-79",
-		"80-84", "85-89", "80-89",
-		"80+", "A",
+		"70+", "80-84", "85-89",
+		"80-89", "80+", "A",
 	}
 
 	for i := 0; i < len(cats); i++ {
@@ -267,6 +267,7 @@ func (db *Db) GetMinMaxAgeForCategory(ageCategory string) (int, int, error) {
 		"70-74": &AgeLookup{70, 74},
 		"75-79": &AgeLookup{75, 79},
 		"70-79": &AgeLookup{70, 79},
+		"70+":   &AgeLookup{70, 100},
 		"80-84": &AgeLookup{80, 84},
 		"85-89": &AgeLookup{85, 89},
 		"80-89": &AgeLookup{80, 89},

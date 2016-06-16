@@ -97,7 +97,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
 
-	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
+	re, err := regexp.Compile("^(?P<position>\\d+)\\s{3,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{2,}(?P<sex>[MF])\\((?P<sex_pos>\\d+)(.*)\\)\\s{2,}(?P<category>U20|70\\+|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)(.*)")
 	re2, err := regexp.Compile("^\\s{0,}(?P<position>\\d+)\\s{2,}(?P<bib_number>\\d+)\\s{1,}(?P<name>.*?)(\\s{2,}|\\s\\((?P<club>[A-Z{2,4}]+\\)))\\s{2,}(?P<time>[0-9\\:]+)\\s{1,}L(?P<sex>M|F|W)(?P<category>-19|80\\+|A|\\d\\d-\\d\\d)\\s{2,}(?P<category_position>\\d+)\\/[\\d]+\\s{2,}(?P<sex_pos>\\d+)")
 
 	if err != nil {
