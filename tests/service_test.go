@@ -158,7 +158,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//fetch race results
 	s.doRequest(raceResultsPath, &raceResults)
-	c.Assert(len(raceResults.Results), Equals, 15)
+	c.Assert(len(raceResults.Results), Equals, 17)
 
 	slowChrisResultsPath := raceResults.Racers[raceResults.Results[10].RacerID].ResultsPath
 	andreaWhiteResultsPath := raceResults.Racers[raceResults.Results[11].RacerID].ResultsPath
