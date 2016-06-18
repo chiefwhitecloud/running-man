@@ -71,8 +71,15 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		return model.RaceDetails{}, errors.New("Results not found in HTML")
 	}
 
-	dateReg, err := regexp.Compile("(?P<month>January|February|March|April|May|June|July|August|September|October|November|December)[ ](?P<day>0[1-9]|[1-2][0-9]|3[0-1])(st|nd|rd|th)?[,][ ](?P<year>20[0-9]{2})")
-	r3 := dateReg.FindAllStringSubmatch(resultsAddress, -1)[0]
+	dateReg := regexp.MustCompile(`(?P<month>January|February|March|April|May|June|July|August|September|October|November|December)[ ](?P<day>0?[1-9]|[1-2][0-9]|3[0-1])(st|nd|rd|th)?[,][ ](?P<year>20[0-9]{2})`)
+	r3 := dateReg.FindAllStringSubmatch(resultsAddress, -1)
+	var r4 []string
+	if r3 == nil {
+		log.Println(resultsAddress)
+		return model.RaceDetails{}, errors.New("Date not found in " + resultsTitle)
+	} else {
+		r4 = r3[0]
+	}
 
 	monthMap := map[string]int{
 		"JANUARY":   1,
@@ -89,14 +96,10 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		"DECEMBER":  12,
 	}
 
-	if len(r3) > 0 {
-		raceMonth = monthMap[strings.ToUpper(r3[1])]
-		raceDay, err = strconv.Atoi(r3[2])
-		raceYear, err = strconv.Atoi(r3[4])
-
-		if err != nil {
-			log.Println(err)
-		}
+	if len(r4) > 0 {
+		raceMonth = monthMap[strings.ToUpper(r4[1])]
+		raceDay, _ = strconv.Atoi(r4[2])
+		raceYear, _ = strconv.Atoi(r4[4])
 	} else {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
