@@ -267,6 +267,13 @@ func (s *TestSuite) Test03ImportRoadRace(c *C) {
 	_ = json.Unmarshal(jsonBlob, &race)
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
 	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.ResultsPath, Equals, s.host+"/feed/race/1/results")
+
+	var raceResults api.RaceResults
+	s.doRequest(race.ResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 18)
+	c.Assert(len(raceResults.Racers), Equals, 18)
+
 }
 
 func (s *TestSuite) doRequest(path string, entity interface{}) error {
