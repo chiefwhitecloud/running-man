@@ -18,6 +18,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 	z := html.NewTokenizer(bytes.NewReader(htmlresult))
 	found := false
+	preMode := false
 	foundTitle := false
 	foundAddress := false
 	var results string
@@ -29,15 +30,21 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 		if tt == html.ErrorToken {
 			break
+		} else if preMode && tt == html.StartTagToken {
+
 		} else if tt == html.EndTagToken {
 			t := z.Token()
 			if t.Data == "address" {
 				foundAddress = false
+			} else if t.Data == "pre" {
+				found = false
+				preMode = false
 			}
 		} else if tt == html.StartTagToken {
 			t := z.Token()
 			if t.Data == "pre" {
 				found = true
+				preMode = true
 			} else if t.Data == "title" {
 				foundTitle = true
 			} else if t.Data == "address" {
@@ -45,8 +52,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 			}
 		} else if tt == html.TextToken {
 			if found {
-				results = string(z.Text())
-				found = false
+				results = results + string(z.Text())
 			}
 
 			if foundTitle {
@@ -56,8 +62,20 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 			if foundAddress {
 				resultsAddress = resultsAddress + string(z.Text())
+				foundAddress = false
 			}
 		}
+	}
+
+	if results == "" {
+		return model.RaceDetails{}, errors.New("Results not found in HTML")
+	}
+
+	raceRows := strings.Split(results, "\n")
+	raceRows = append(raceRows[:0], raceRows[1:]...)
+
+	if resultsTitle == "" {
+		return model.RaceDetails{}, errors.New("Title tag not found in HTML")
 	}
 
 	raceTitles := strings.Split(resultsTitle, ":")
@@ -65,10 +83,11 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		resultsTitle = strings.Trim(raceTitles[1], " ")
 	}
 
-	resultsAddress = strings.Replace(resultsAddress, "\n", "", -1)
-
-	if results == "" {
-		return model.RaceDetails{}, errors.New("Results not found in HTML")
+	if resultsAddress == "" {
+		//maybe the date it is in the first line of the pre tag..
+		resultsAddress = raceRows[0]
+	} else {
+		resultsAddress = strings.Replace(resultsAddress, "\n", "", -1)
 	}
 
 	dateReg := regexp.MustCompile(`(?P<month>January|February|March|April|May|June|July|August|September|October|November|December)[ ](?P<day>0?[1-9]|[1-2][0-9]|3[0-1])(st|nd|rd|th)?[,][ ](?P<year>20[0-9]{2})`)
@@ -107,19 +126,14 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	re := regexp.MustCompile(`^(?P<position>\d+)\s{3,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+\)))\s{2,}(?P<time>[0-9\\:]+)\s{2,}(?P<sex>[MF])\((?P<sex_pos>\d+)(.*)\)\s{2,}(?P<category>U20|70\+|\d\d-\d\d)\s{2,}(?P<category_position>\d+)(.*)`)
 	re2 := regexp.MustCompile(`^\s{0,}(?P<position>\d+)\s{2,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+\)))\s{2,}(?P<time>[0-9\:]+)\s{1,}L(?P<sex>M|F|W)(?P<category>-19|80\+|A|\d\d-\d\d)\s{2,}(?P<category_position>\d+)\/[\d]+\s{2,}(?P<sex_pos>\d+)`)
 	re3 := regexp.MustCompile(`(?s)^(?P<position>\d+)\s{3,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+)\)).{1}\s{2,}(?P<time>[0-9\:]+)\s{2,}(?P<sex>[MF])\((?P<sex_pos>\d+)(.*)\)\s{2,}(?P<category>U20|70\+|\d\d-\d\d)\s{2,}(?P<category_position>\d+)(.*)`)
-	re4 := regexp.MustCompile(`^\s{0,}\d`)
+	re4 := regexp.MustCompile(`^\s{0,}\d{1,} `)
 	n1 := re.SubexpNames()
 	n2 := re2.SubexpNames()
 	n3 := re3.SubexpNames()
 
-	raceRows := strings.Split(results, "\n")
-
-	raceRows = append(raceRows[:0], raceRows[1:]...)
-
 	var racerResults []model.Racer
 
 	for i := 0; i < len(raceRows); i++ {
-
 		var r2 [][]string
 
 		md := map[string]string{}

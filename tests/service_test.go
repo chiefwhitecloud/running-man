@@ -252,6 +252,23 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 
 }
 
+// Import a race from 2008
+func (s *TestSuite) Test03ImportRoadRace(c *C) {
+
+	//import a race
+	request := gorequest.New()
+	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
+		Send(`{"raceUrl":"http://www.nlaa.ca/03-Road-Race.html"}`).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+
+	var race api.Race
+	jsonBlob := []byte(body)
+	_ = json.Unmarshal(jsonBlob, &race)
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
+	c.Assert(race.Id, Equals, 1)
+}
+
 func (s *TestSuite) doRequest(path string, entity interface{}) error {
 
 	request := gorequest.New()

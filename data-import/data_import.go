@@ -40,6 +40,7 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 	raceDetails, err := parseResults(results)
 
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(res, err.Error(), 500)
 		return
 	}
