@@ -466,6 +466,7 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, race.name,  race.id, race_result.id,  race_result.sex, race.date, race_result.age_category_id").
 		Joins("join race on race_result.race_id = race.id").
 		Where("race_result.racer_id = ?", r.ID).
+		Order("race.date DESC").
 		Rows()
 
 	if err != nil {
