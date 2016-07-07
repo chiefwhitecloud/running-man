@@ -1,6 +1,10 @@
 package service
 
 import (
+	"log"
+	"net/http"
+	"os"
+
 	_ "github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/data-import"
 	"github.com/chiefwhitecloud/running-man/data-import/fetcher"
@@ -8,9 +12,6 @@ import (
 	"github.com/chiefwhitecloud/running-man/feed"
 	"github.com/chiefwhitecloud/running-man/ui"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
-	"os"
 )
 
 var _ = log.Printf
@@ -70,6 +71,7 @@ func (s *RunningManService) Run() error {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/import", importer.DoImport).Methods("POST")
+	r.HandleFunc("/import/task/{id}", importer.CheckImportStatus).Methods("GET")
 	r.HandleFunc("/feed/races", feeds.ListRaces).Methods("GET")
 	r.HandleFunc("/feed/race/{id}", feeds.GetRace).Methods("GET")
 	r.HandleFunc("/feed/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")

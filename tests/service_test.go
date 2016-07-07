@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/chiefwhitecloud/running-man/api"
 	"github.com/chiefwhitecloud/running-man/database"
@@ -54,24 +55,18 @@ func (s *TestSuite) TearDownTest(c *C) {
 func (s *TestSuite) Test01Import(c *C) {
 
 	//import a race
-	request := gorequest.New()
-	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
-		Send(`{"raceUrl":"http://www.nlaa.ca/00-Road-Race.html"}`).
-		End()
-	c.Assert(resp.StatusCode, Equals, 201)
-	var race api.Race
-	jsonBlob := []byte(body)
-	err := json.Unmarshal(jsonBlob, &race)
+	race, _ := s.doImport("http://www.nlaa.ca/00-Road-Race.html")
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
 	c.Assert(race.Id, Equals, 1)
 
 	// fetch the race list
-	resp, body, _ = request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
+	request := gorequest.New()
+	resp, body, _ := request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 
-	jsonBlob = []byte(body)
+	jsonBlob := []byte(body)
 	var races api.RaceFeed
-	err = json.Unmarshal(jsonBlob, &races)
+	err := json.Unmarshal(jsonBlob, &races)
 
 	c.Assert(len(races.Races), Equals, 1)
 	c.Assert(races.Races[0].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
@@ -145,12 +140,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(len(raceResults.Results), Equals, 1)
 
 	//import another race
-	resp, body, _ = request.Post(fmt.Sprintf("%s/import", s.host)).
-		Send(`{"raceUrl":"http://www.nlaa.ca/01-Road-Race.html"}`).
-		End()
-	c.Assert(resp.StatusCode, Equals, 201)
-	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &race)
+	race, _ = s.doImport("http://www.nlaa.ca/01-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
 	c.Assert(race.ResultsPath, Equals, s.host+"/feed/race/2/results")
 	c.Assert(race.Date, Equals, "2015-04-26")
@@ -218,23 +208,16 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 
 	//import a race
 
-	request := gorequest.New()
-	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
-		Send(`{"raceUrl":"http://www.nlaa.ca/02-Tely.html"}`).
-		End()
-	c.Assert(resp.StatusCode, Equals, 201)
-
-	var race api.Race
-	jsonBlob := []byte(body)
-	_ = json.Unmarshal(jsonBlob, &race)
+	race, _ := s.doImport("http://www.nlaa.ca/02-Tely.html")
 	c.Assert(race.Name, Equals, "88th Annual Tely 10 Mile Road Race")
 	c.Assert(race.Id, Equals, 1)
 
 	// fetch the race list
-	resp, body, _ = request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
+	request := gorequest.New()
+	resp, body, _ := request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 
-	jsonBlob = []byte(body)
+	jsonBlob := []byte(body)
 	var races api.RaceFeed
 	_ = json.Unmarshal(jsonBlob, &races)
 
@@ -256,15 +239,7 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 func (s *TestSuite) Test03ImportRoadRace(c *C) {
 
 	//import a race
-	request := gorequest.New()
-	resp, body, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
-		Send(`{"raceUrl":"http://www.nlaa.ca/03-Road-Race.html"}`).
-		End()
-	c.Assert(resp.StatusCode, Equals, 201)
-
-	var race api.Race
-	jsonBlob := []byte(body)
-	_ = json.Unmarshal(jsonBlob, &race)
+	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
 	c.Assert(race.Id, Equals, 1)
 	c.Assert(race.ResultsPath, Equals, s.host+"/feed/race/1/results")
@@ -273,7 +248,58 @@ func (s *TestSuite) Test03ImportRoadRace(c *C) {
 	s.doRequest(race.ResultsPath, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 18)
 	c.Assert(len(raceResults.Racers), Equals, 18)
+}
 
+func (s *TestSuite) doImport(path string) (api.Race, error) {
+
+	var race api.Race
+
+	request := gorequest.New()
+	url := api.DataImport{RaceUrl: path}
+	resp, _, _ := request.Post(fmt.Sprintf("%s/import", s.host)).
+		Send(url).
+		End()
+
+	//initial status code should be 202
+	if resp.StatusCode == 202 {
+
+		//get the location header
+		var taskLocation string
+		taskLocation = resp.Header.Get("Location")
+		var resp gorequest.Response
+		var body string
+
+		//ping the task until it is completed
+		errRetry := retry(5, func() error {
+			resp, body, _ = request.Get(taskLocation).End()
+			if resp.StatusCode == 200 {
+
+				if resp.Request.URL.String() == taskLocation {
+					return errors.New("Still pending")
+				} else {
+					return nil
+				}
+			} else {
+				log.Println("unknown")
+				return errors.New("Unknown status")
+			}
+		})
+		if errRetry != nil {
+			log.Println(errRetry)
+		}
+
+		jsonBlob := []byte(body)
+		err := json.Unmarshal(jsonBlob, &race)
+
+		if err != nil {
+			return race, err
+		}
+
+		return race, nil
+
+	} else {
+		return race, errors.New("nannan")
+	}
 }
 
 func (s *TestSuite) doRequest(path string, entity interface{}) error {
@@ -292,4 +318,21 @@ func (s *TestSuite) doRequest(path string, entity interface{}) error {
 	}
 
 	return nil
+}
+
+func retry(attempts int, callback func() error) (err error) {
+	for i := 0; ; i++ {
+		err = callback()
+		if err == nil {
+			return nil
+		}
+
+		if i >= (attempts - 1) {
+			break
+		}
+
+		time.Sleep(2 * time.Second)
+
+	}
+	return fmt.Errorf("after %d attempts, last error: %s", attempts, err)
 }

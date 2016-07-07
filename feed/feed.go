@@ -231,6 +231,14 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 
 }
 
+func FormatImportTaskLocation(req *http.Request, taskId int) string {
+	return fmt.Sprintf("http://%s/import/task/%d", req.Host, taskId)
+}
+
+func FormatRaceLocation(req *http.Request, raceId int) string {
+	return fmt.Sprintf("http://%s/feed/race/%d", req.Host, raceId)
+}
+
 func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 	return api.Race{
 		Id:          race.ID,

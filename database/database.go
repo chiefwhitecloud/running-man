@@ -22,9 +22,10 @@ type Racer struct {
 }
 
 type Race struct {
-	ID   int
-	Name string
-	Date time.Time
+	ID           int
+	Name         string
+	Date         time.Time
+	ImportStatus string
 }
 
 type RaceResult struct {
@@ -108,7 +109,13 @@ func (db *Db) Open() error {
 	return nil
 }
 
-func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
+func (db *Db) CreatePendingRace() (int, error) {
+	race := Race{Name: "Pending", ImportStatus: "pending"}
+	db.orm.Create(&race)
+	return race.ID, nil
+}
+
+func (db *Db) SaveRace(pendingRaceId int, r *model.RaceDetails) (Race, error) {
 
 	cats := []AgeCategory{}
 
@@ -116,9 +123,11 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 
 	raceDate := time.Date(r.Year, time.Month(r.Month), r.Day, 0, 0, 0, 0, time.UTC)
 
-	race := Race{Name: r.Name, Date: raceDate}
-
-	db.orm.Create(&race)
+	race := Race{ID: pendingRaceId}
+	db.orm.First(&race)
+	race.Name = r.Name
+	race.Date = raceDate
+	db.orm.Save(&race)
 
 	//save the race results information
 	for i := range r.Racers {
@@ -206,6 +215,9 @@ func (db *Db) SaveRace(r *model.RaceDetails) (Race, error) {
 		db.orm.Create(&result)
 
 	}
+
+	race.ImportStatus = "completed"
+	db.orm.Save(&race)
 
 	return race, nil
 }
