@@ -16,6 +16,14 @@ type Db struct {
 	ConnectionString string
 }
 
+type ImportTask struct {
+	ID        int
+	RaceID    int
+	Status    string
+	SrcUrl    string
+	ErrorText string
+}
+
 type Racer struct {
 	ID      int
 	Created time.Time
@@ -26,6 +34,7 @@ type Race struct {
 	Name         string
 	Date         time.Time
 	ImportStatus string
+	SrcUrl       string
 }
 
 type RaceResult struct {
@@ -66,7 +75,7 @@ type AgeResult struct {
 }
 
 func (db *Db) Migrate() {
-	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
+	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
 
 	cats := []string{
 		"U20", "-19",
@@ -88,12 +97,12 @@ func (db *Db) Migrate() {
 }
 
 func (db *Db) Create() {
-	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
+	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
 
 }
 
 func (db *Db) DropAllTables() {
-	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{})
+	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
 }
 
 func (db *Db) Open() error {
@@ -109,13 +118,25 @@ func (db *Db) Open() error {
 	return nil
 }
 
-func (db *Db) CreatePendingRace() (int, error) {
-	race := Race{Name: "Pending", ImportStatus: "pending"}
+func (db *Db) CreateImportTask(url string) (ImportTask, error) {
+	race := Race{Name: "Pending", ImportStatus: "pending", SrcUrl: url}
 	db.orm.Create(&race)
-	return race.ID, nil
+	task := ImportTask{RaceID: race.ID, Status: "pending", SrcUrl: url}
+	db.orm.Create(&task)
+	return task, nil
 }
 
-func (db *Db) SaveRace(pendingRaceId int, r *model.RaceDetails) (Race, error) {
+func (db *Db) FailedImport(task ImportTask, err error) {
+	task.Status = "failed"
+	task.ErrorText = err.Error()
+	db.orm.Save(&task)
+
+	db.orm.Delete(&Race{}, task.RaceID)
+	db.orm.Delete(&RaceResult{}, "race_id = ?", task.RaceID)
+
+}
+
+func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 
 	cats := []AgeCategory{}
 
@@ -123,7 +144,7 @@ func (db *Db) SaveRace(pendingRaceId int, r *model.RaceDetails) (Race, error) {
 
 	raceDate := time.Date(r.Year, time.Month(r.Month), r.Day, 0, 0, 0, 0, time.UTC)
 
-	race := Race{ID: pendingRaceId}
+	race := Race{ID: task.RaceID}
 	db.orm.First(&race)
 	race.Name = r.Name
 	race.Date = raceDate
@@ -219,6 +240,9 @@ func (db *Db) SaveRace(pendingRaceId int, r *model.RaceDetails) (Race, error) {
 	race.ImportStatus = "completed"
 	db.orm.Save(&race)
 
+	task.Status = "completed"
+	db.orm.Save(&task)
+
 	return race, nil
 }
 
@@ -232,6 +256,12 @@ func (db *Db) GetRace(id int) (Race, error) {
 	race := Race{}
 	db.orm.First(&race, id)
 	return race, nil
+}
+
+func (db *Db) GetImportTask(id int) (ImportTask, error) {
+	task := ImportTask{}
+	db.orm.First(&task, id)
+	return task, nil
 }
 
 func (db *Db) GetRacer(id int) (Racer, error) {

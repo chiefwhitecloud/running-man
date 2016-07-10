@@ -156,12 +156,11 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				md[n3[i]] = n
 			}
 		} else if re4.MatchString(raceRows[i]) {
-			//multiline race result
-			log.Println("Failed to parse result for " + resultsTitle)
-			log.Println(raceRows[i])
+			//log.Println("Failed to parse result for " + resultsTitle)
+			return model.RaceDetails{}, errors.New("Failed to parse line : " + raceRows[i])
 		} else {
-			log.Println("Skipping line in race result for " + resultsTitle)
-			log.Println(raceRows[i])
+			//log.Println("Skipping line in race result for " + resultsTitle)
+			//log.Println(raceRows[i])
 		}
 
 		if len(r2) > 0 {

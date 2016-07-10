@@ -250,6 +250,14 @@ func (s *TestSuite) Test03ImportRoadRace(c *C) {
 	c.Assert(len(raceResults.Racers), Equals, 18)
 }
 
+// Import a race from 2008
+func (s *TestSuite) Test04ImportFailed(c *C) {
+
+	//import a race
+	_, err := s.doImport("http://www.nlaa.ca/")
+	c.Assert(err, Not(Equals), nil)
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race
@@ -279,13 +287,16 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 				} else {
 					return nil
 				}
+			} else if resp.StatusCode == 500 {
+				log.Println(resp.Body)
+				return errors.New("Import Failed")
 			} else {
 				log.Println("unknown")
 				return errors.New("Unknown status")
 			}
 		})
 		if errRetry != nil {
-			log.Println(errRetry)
+			return race, errRetry
 		}
 
 		jsonBlob := []byte(body)

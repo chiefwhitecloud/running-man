@@ -31,19 +31,20 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	pendingRaceId, _ := r.Db.CreatePendingRace()
+	importTask, _ := r.Db.CreateImportTask(dataimport.RaceUrl)
 	res.Header().Set("Content-Type", "application/json")
-	res.Header().Set("Location", feed.FormatImportTaskLocation(req, pendingRaceId))
+	res.Header().Set("Location", feed.FormatImportTaskLocation(req, importTask.ID))
 	res.WriteHeader(http.StatusAccepted)
 
-	r.ImportResults(pendingRaceId, dataimport.RaceUrl)
+	r.ImportResults(importTask)
 }
 
-func (r *DataImportResource) ImportResults(pendingRaceId int, url string) {
+func (r *DataImportResource) ImportResults(task database.ImportTask) {
 
-	results, err := r.RaceFetcher.GetRawResults(url)
+	results, err := r.RaceFetcher.GetRawResults(task.SrcUrl)
 
 	if err != nil {
+		r.Db.FailedImport(task, err)
 		return
 	}
 
@@ -51,20 +52,16 @@ func (r *DataImportResource) ImportResults(pendingRaceId int, url string) {
 	raceDetails, err := parseResults(results)
 
 	if err != nil {
-		log.Println(err.Error())
-		//http.Error(res, err.Error(), 500)
+		r.Db.FailedImport(task, err)
 		return
 	}
 
-	_, err = r.Db.SaveRace(pendingRaceId, &raceDetails)
+	_, err = r.Db.SaveRace(task, &raceDetails)
 
-	//raceFeed := feed.FormatRaceForFeed(req, race)
-
-	//raceFeedFormatted, err := json.Marshal(&raceFeed)
-
-	//if err != nil {
-	//	http.Error(res, err.Error(), 500)
-	//}
+	if err != nil {
+		r.Db.FailedImport(task, err)
+		return
+	}
 
 }
 
@@ -72,19 +69,21 @@ func (r *DataImportResource) CheckImportStatus(res http.ResponseWriter, req *htt
 
 	vars := mux.Vars(req)
 
-	raceId, err := strconv.Atoi(vars["id"])
+	taskId, err := strconv.Atoi(vars["id"])
 
 	if err != nil {
 		http.Error(res, err.Error(), 404)
 	}
 
-	race, _ := r.Db.GetRace(raceId)
+	task, _ := r.Db.GetImportTask(taskId)
 
-	if race.ImportStatus == "pending" {
+	if task.Status == "pending" {
 		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(http.StatusOK)
-	} else if race.ImportStatus == "completed" {
+	} else if task.Status == "failed" {
+		http.Error(res, task.ErrorText, http.StatusInternalServerError)
+	} else if task.Status == "completed" {
 		//redirect to the new race resource
-		http.Redirect(res, req, feed.FormatRaceLocation(req, race.ID), http.StatusSeeOther)
+		http.Redirect(res, req, feed.FormatRaceLocation(req, task.RaceID), http.StatusSeeOther)
 	}
 }
