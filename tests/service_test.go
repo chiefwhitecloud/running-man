@@ -281,17 +281,14 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 		errRetry := retry(5, func() error {
 			resp, body, _ = request.Get(taskLocation).End()
 			if resp.StatusCode == 200 {
-
 				if resp.Request.URL.String() == taskLocation {
 					return errors.New("Still pending")
 				} else {
 					return nil
 				}
 			} else if resp.StatusCode == 500 {
-				log.Println(resp.Body)
 				return errors.New("Import Failed")
 			} else {
-				log.Println("unknown")
 				return errors.New("Unknown status")
 			}
 		})
@@ -336,6 +333,10 @@ func retry(attempts int, callback func() error) (err error) {
 		err = callback()
 		if err == nil {
 			return nil
+		}
+
+		if err != nil && err.Error() == "Import Failed" {
+			break
 		}
 
 		if i >= (attempts - 1) {
