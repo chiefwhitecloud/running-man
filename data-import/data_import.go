@@ -21,13 +21,19 @@ type DataImportResource struct {
 
 func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request) {
 
+	v := req.Header.Get("Content-Type")
+	if v != "application/json" {
+		http.Error(res, "Invalid Request", 400)
+		return
+	}
+
 	var dataimport api.DataImport
 
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&dataimport)
 
 	if err != nil {
-		http.Error(res, "Invalid parameter", 400)
+		http.Error(res, "Invalid Request", 400)
 		return
 	}
 
