@@ -258,6 +258,17 @@ func (s *TestSuite) Test04ImportFailed(c *C) {
 	c.Assert(err, Not(Equals), nil)
 }
 
+func (s *TestSuite) Test05ImportFailed(c *C) {
+
+	//import a race
+	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
+
+	//cant import the same race twice
+	_, err := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
+	c.Assert(err, Not(Equals), nil)
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race
@@ -286,7 +297,7 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 				} else {
 					return nil
 				}
-			} else if resp.StatusCode == 500 {
+			} else if resp.StatusCode == 500 || resp.StatusCode == 400 {
 				return errors.New("Import Failed")
 			} else {
 				return errors.New("Unknown status")

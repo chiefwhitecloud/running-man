@@ -23,7 +23,7 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 
 	v := req.Header.Get("Content-Type")
 	if v != "application/json" {
-		http.Error(res, "Invalid Request", 400)
+		http.Error(res, "Invalid Request", http.StatusBadRequest)
 		return
 	}
 
@@ -33,7 +33,19 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 	err := decoder.Decode(&dataimport)
 
 	if err != nil {
-		http.Error(res, "Invalid Request", 400)
+		http.Error(res, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+
+	if r.Db.HasRaceBeenImported(dataimport.RaceUrl) {
+		http.Error(res, "Race Already Imported", http.StatusBadRequest)
+		return
+	}
+
+	tasks := r.Db.GetPendingImportTasks()
+
+	if len(tasks) > 0 {
+		http.Error(res, "Server is busy processing another import", http.StatusConflict)
 		return
 	}
 

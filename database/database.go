@@ -136,6 +136,22 @@ func (db *Db) FailedImport(task ImportTask, err error) {
 
 }
 
+func (db *Db) GetPendingImportTasks() []ImportTask {
+	tasks := []ImportTask{}
+	db.orm.Where("status = ?", "pending").Find(&tasks)
+	return tasks
+}
+
+func (db *Db) HasRaceBeenImported(url string) bool {
+	races := []Race{}
+	db.orm.Where("src_url = ? AND import_status = ?", url, "completed").Find(&races)
+	if len(races) > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 
 	cats := []AgeCategory{}
