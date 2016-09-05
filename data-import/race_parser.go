@@ -123,10 +123,25 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		return model.RaceDetails{}, errors.New("Could not find race date")
 	}
 
-	re := regexp.MustCompile(`^(?P<position>\d+)\s{3,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+\)))(\s{1,})?(?P<time>[0-9\\:]+)\s{2,}(?P<sex>[MF])\((?P<sex_pos>\d+)(.*)\)\s{2,}(?P<category>U20|70\+|\d\d-\d\d)\s{2,}(?P<category_position>\d+)(.*)`)
-	re2 := regexp.MustCompile(`^\s{0,}(?P<position>\d+)\s{2,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+\)))\s{2,}(?P<time>[0-9\:]+)\s{1,}L(?P<sex>M|F|W)(?P<category>-19|80\+|A|\d\d-\d\d)\s{2,}(?P<category_position>\d+)\/[\d]+\s{2,}(?P<sex_pos>\d+)`)
-	re3 := regexp.MustCompile(`(?s)^(?P<position>\d+)\s{3,}(?P<bib_number>\d+)\s{1,}(?P<name>.*?)(\s{2,}|\s\((?P<club>[A-Z{2,4}]+)\)).{1}\s{2,}(?P<time>[0-9\:]+)\s{2,}(?P<sex>[MF])\((?P<sex_pos>\d+)(.*)\)\s{2,}(?P<category>U20|70\+|\d\d-\d\d)\s{2,}(?P<category_position>\d+)(.*)`)
+	const position = `^[ ]*(?P<position>\d+)`
+	const bibNameTime = `[ ]+(?P<bib>\d+)[ ]+(?P<name>[\D\(\)]+)(?P<time>[\:\d]+)`
+	const spaceOrMore = `[ ]+`
+	const sexPosition = `(?P<sex_pos>[\(]?\d+[\)]?)`
+	const sex = `(?P<sex>M|F|W)`
+	const category = `(?P<category>A|-19|U20|70\+|80\+|\d\d-\d\d)`
+	const categoryPosition = `((?P<category_position>\d+)(\/[\d]+)?)`
+
+	const clubNameRegEx = `[^\(]*\((?P<club>\w{2,4})\)`
+
+	mainRegEx := position + bibNameTime + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition
+
+	re := regexp.MustCompile(mainRegEx)
+	re2 := regexp.MustCompile(position + bibNameTime + spaceOrMore + `L?` + sex + category + spaceOrMore + categoryPosition + spaceOrMore + sexPosition)
+	re3 := regexp.MustCompile(position + bibNameTime + `.{1}` + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition)
 	re4 := regexp.MustCompile(`^\s{0,}\d{1,} `)
+
+	clubName := regexp.MustCompile(clubNameRegEx)
+
 	n1 := re.SubexpNames()
 	n2 := re2.SubexpNames()
 	n3 := re3.SubexpNames()
@@ -156,7 +171,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				md[n3[i]] = n
 			}
 		} else if re4.MatchString(raceRows[i]) {
-			//log.Println("Failed to parse result for " + resultsTitle)
+			log.Println("Failed to parse result with " + re2.String())
 			return model.RaceDetails{}, errors.New("Failed to parse line : " + raceRows[i])
 		} else {
 			//log.Println("Skipping line in race result for " + resultsTitle)
@@ -171,10 +186,21 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 			ap, _ := strconv.Atoi(md["category_position"])
 
+			var club []string
+
+			var runnersClubName string
+
+			if clubName.MatchString(md["name"]) {
+				club = clubName.FindStringSubmatch(md["name"])
+				//extract club name and remove it from the racers name
+				runnersClubName = club[1]
+				md["name"] = strings.Replace(md["name"], "("+runnersClubName+")", "", 1)
+			}
+
 			racerResults = append(racerResults, model.Racer{Position: p,
-				Name:                md["name"],
+				Name:                strings.TrimSpace(md["name"]),
 				BibNumber:           md["bib_number"],
-				Club:                md["club"],
+				Club:                runnersClubName,
 				Time:                md["time"],
 				Sex:                 md["sex"],
 				SexPosition:         sp,

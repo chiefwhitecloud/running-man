@@ -269,6 +269,23 @@ func (s *TestSuite) Test05ImportFailed(c *C) {
 	c.Assert(err, Not(Equals), nil)
 }
 
+func (s *TestSuite) Test06Import(c *C) {
+
+	//import a race
+	race, err := s.doImport("http://www.nlaa.ca/04-Road-Race.html")
+	c.Assert(race.Name, Equals, "ANE Mile")
+	c.Assert(err, Equals, nil)
+}
+
+func (s *TestSuite) Test07Import(c *C) {
+
+	//import a race
+	race, err := s.doImport("http://www.nlaa.ca/05-Tely.html")
+	c.Assert(err, Equals, nil)
+	c.Assert(race.Name, Equals, "83rd Annual Tely 10 Mile Road Race")
+
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race
@@ -297,7 +314,8 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 				} else {
 					return nil
 				}
-			} else if resp.StatusCode == 500 || resp.StatusCode == 400 {
+			} else if resp.StatusCode == 500 {
+				log.Println(resp.Body)
 				return errors.New("Import Failed")
 			} else {
 				return errors.New("Unknown status")
