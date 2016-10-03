@@ -127,8 +127,8 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	const bibNameTime = `[ ]+(?P<bib>\d+)[ ]+(?P<name>[\D\(\)]+)(?P<time>[\:\d]+)`
 	const spaceOrMore = `[ ]+`
 	const sexPosition = `(?P<sex_pos>[\(]?\d+[\)]?)`
-	const sex = `(?P<sex>M|F|W)`
-	const category = `(?P<category>A|-19|U20|70\+|80\+|\d\d-\d\d)`
+	const sex = `(?P<sex>M|F|W|P)`
+	const category = `(?P<category>A|-19|U20|70\+|80\+|\d\d-\d\d|)`
 	const categoryPosition = `((?P<category_position>\d+)(\/[\d]+)?)`
 
 	const clubNameRegEx = `[^\(]*\((?P<club>\w{2,4})\)`
