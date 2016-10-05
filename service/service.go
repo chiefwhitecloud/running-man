@@ -70,16 +70,19 @@ func (s *RunningManService) Run() error {
 	// route handlers
 	r := mux.NewRouter()
 
-	r.HandleFunc("/import", importer.DoImport).Methods("POST")
-	r.HandleFunc("/import/task/{id}", importer.CheckImportStatus).Methods("GET")
-	r.HandleFunc("/feed/races", feeds.ListRaces).Methods("GET")
-	r.HandleFunc("/feed/race/{id}", feeds.GetRace).Methods("GET")
-	r.HandleFunc("/feed/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
-	r.HandleFunc("/feed/racer/{id}", feeds.GetRacer).Methods("GET")
-	r.HandleFunc("/feed/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
-	r.HandleFunc("/feed/racer/{id}/profile", feeds.GetRacerProfile).Methods("GET")
-	r.HandleFunc("/feed/racer/{id}/merge", feeds.MergeRacer).Methods("POST")
-	r.HandleFunc("/", ui.GetDefaultTemplate).Methods("GET")
+	var importRouter = r.PathPrefix("/feed/").Subrouter()
+	importRouter.HandleFunc("/", importer.DoImport).Methods("POST")
+	importRouter.HandleFunc("/task/{id}", importer.CheckImportStatus).Methods("GET")
+	var feedRouter = r.PathPrefix("/feed/").Subrouter()
+	feedRouter.HandleFunc("/races", feeds.ListRaces).Methods("GET")
+	feedRouter.HandleFunc("/race/{id}", feeds.GetRace).Methods("GET")
+	feedRouter.HandleFunc("/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
+	feedRouter.HandleFunc("/racer/{id}", feeds.GetRacer).Methods("GET")
+	feedRouter.HandleFunc("/racer/{id}/results", feeds.GetRaceResultsForRacer).Methods("GET")
+	feedRouter.HandleFunc("/racer/{id}/profile", feeds.GetRacerProfile).Methods("GET")
+	feedRouter.HandleFunc("/racer/{id}/merge", feeds.MergeRacer).Methods("POST")
+
+	r.PathPrefix("/").Handler(ui)
 
 	http.Handle("/", r)
 

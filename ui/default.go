@@ -9,11 +9,10 @@ import (
 )
 
 type UI struct {
-	Template []byte
-	BaseDir  string
+	BaseDir string
 }
 
-func (ui *UI) GetDefaultTemplate(res http.ResponseWriter, req *http.Request) {
+func (ui *UI) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	assetPath := os.Getenv("ASSET_PATH")
 
@@ -28,8 +27,6 @@ func (ui *UI) GetDefaultTemplate(res http.ResponseWriter, req *http.Request) {
 	}
 
 	tmpPath := filepath.Join(ui.BaseDir, "./ui/tmpl/index.html")
-
-	log.Println(tmpPath)
 
 	t := template.New("some template")
 	t, err := t.ParseFiles(tmpPath)
