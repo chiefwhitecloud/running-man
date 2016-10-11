@@ -70,9 +70,9 @@ func (s *RunningManService) Run() error {
 	// route handlers
 	r := mux.NewRouter()
 
-	var importRouter = r.PathPrefix("/feed/").Subrouter()
-	importRouter.HandleFunc("/", importer.DoImport).Methods("POST")
-	importRouter.HandleFunc("/task/{id}", importer.CheckImportStatus).Methods("GET")
+	r.HandleFunc("/import", importer.DoImport).Methods("POST")
+	r.HandleFunc("/import/task/{id}", importer.CheckImportStatus).Methods("GET")
+
 	var feedRouter = r.PathPrefix("/feed/").Subrouter()
 	feedRouter.HandleFunc("/races", feeds.ListRaces).Methods("GET")
 	feedRouter.HandleFunc("/race/{id}", feeds.GetRace).Methods("GET")
