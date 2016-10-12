@@ -442,7 +442,7 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 	return low, high, nil
 }
 
-func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race, error) {
+func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords int) ([]RaceResult, []Racer, []Race, error) {
 
 	// XXX: Maybe a better way to do this using the ORM.  Couldn't figure it out.
 	// For now doing a manual join and populating the struct to return.  Seems like the
@@ -456,6 +456,7 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id").
 		Joins("join racer on race_result.racer_id = racer.id").
 		Where("race_result.race_id = ?", r.ID).
+		Order("race_result.position ASC").
 		Rows()
 
 	if err != nil {
@@ -478,6 +479,7 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 	var results []RaceResult
 	var races []Race
 	var racers []Racer
+	var numOfRows = 0
 	races = append(races, r)
 
 	for rows.Next() {
@@ -505,6 +507,12 @@ func (db *Db) GetRaceResultsForRace(raceid uint) ([]RaceResult, []Racer, []Race,
 		racers = append(racers, Racer{
 			ID: racerid,
 		})
+
+		numOfRows++
+
+		if numOfRows == numOfRecords {
+			break
+		}
 	}
 
 	return results, racers, races, nil

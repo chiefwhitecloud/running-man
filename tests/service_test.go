@@ -285,6 +285,12 @@ func (s *TestSuite) Test07Import(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Assert(race.Name, Equals, "83rd Annual Tely 10 Mile Road Race")
 
+	//import another race
+	var raceResults api.RaceResults
+	raceResultsPath := race.ResultsPath
+	s.doRequest(raceResultsPath+"?num=10", &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 10)
+
 }
 
 func (s *TestSuite) doImport(path string) (api.Race, error) {

@@ -211,11 +211,34 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 
 	raceId, err := strconv.Atoi(vars["id"])
 
+	startPlace := 0
+
+	recCount := 0
+
+	//optional querystring parameters
+	place := req.URL.Query().Get("startPlace")
+
+	if len(place) != 0 {
+		startPlace, err = strconv.Atoi(place)
+		if err != nil {
+			http.Error(res, err.Error(), 400)
+		}
+	}
+
+	numOfRecords := req.URL.Query().Get("num")
+
+	if len(numOfRecords) != 0 {
+		recCount, err = strconv.Atoi(numOfRecords)
+		if err != nil {
+			http.Error(res, err.Error(), 400)
+		}
+	}
+
 	if err != nil {
 		http.Error(res, err.Error(), 404)
 	}
 
-	rr, racers, races, err := r.Db.GetRaceResultsForRace(uint(raceId))
+	rr, racers, races, err := r.Db.GetRaceResultsForRace(raceId, startPlace, recCount)
 
 	raceFeed := r.formatRaceResultsForFeed(req, rr, racers, races)
 
