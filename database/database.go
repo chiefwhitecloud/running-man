@@ -502,13 +502,27 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 			Sex:                 sex,
 		}
 
-		results = append(results, xx)
+		if startPosition > 0 {
 
-		racers = append(racers, Racer{
-			ID: racerid,
-		})
+			if startPosition <= xx.Position {
+				results = append(results, xx)
 
-		numOfRows++
+				racers = append(racers, Racer{
+					ID: racerid,
+				})
+
+				numOfRows++
+			}
+
+		} else {
+			results = append(results, xx)
+
+			racers = append(racers, Racer{
+				ID: racerid,
+			})
+
+			numOfRows++
+		}
 
 		if numOfRows == numOfRecords {
 			break

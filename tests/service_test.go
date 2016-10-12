@@ -290,6 +290,11 @@ func (s *TestSuite) Test07Import(c *C) {
 	raceResultsPath := race.ResultsPath
 	s.doRequest(raceResultsPath+"?num=10", &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 10)
+	c.Assert(raceResults.Results[0].Position, Equals, 1)
+
+	s.doRequest(raceResultsPath+"?startPos=2&num=5", &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 5)
+	c.Assert(raceResults.Results[0].Position, Equals, 2)
 
 }
 

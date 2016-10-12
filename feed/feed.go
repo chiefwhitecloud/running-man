@@ -216,7 +216,7 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 	recCount := 0
 
 	//optional querystring parameters
-	place := req.URL.Query().Get("startPlace")
+	place := req.URL.Query().Get("startPos")
 
 	if len(place) != 0 {
 		startPlace, err = strconv.Atoi(place)
