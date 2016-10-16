@@ -374,6 +374,8 @@ func (db *Db) GetRacerNames(id int) ([]string, error) {
 
 	var results []string
 
+	defer rows.Close()
+
 	for rows.Next() {
 		err := rows.Scan(&name)
 		if err != nil {
@@ -400,6 +402,8 @@ func (db *Db) GetRacerBirthDates(id int) (time.Time, time.Time, error) {
 	)
 
 	var results []AgeResult
+
+	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.Scan(&raceDate, &ageCategoryName)
@@ -482,6 +486,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 	var numOfRows = 0
 	races = append(races, r)
 
+	defer rows.Close()
 	for rows.Next() {
 		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat)
 		if err != nil {
@@ -573,6 +578,8 @@ func (db *Db) GetRaceResultsForRacer(racerid uint) ([]RaceResult, []Racer, []Rac
 	var racers []Racer
 
 	racers = append(racers, r)
+
+	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.Scan(&raceresulttime, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racename, &raceid, &raceresultid, &sex, &raceDate, &agecat)
