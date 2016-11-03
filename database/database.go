@@ -264,7 +264,7 @@ func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 
 func (db *Db) GetRaces() ([]Race, error) {
 	races := []Race{}
-	db.orm.Find(&races)
+	db.orm.Order("date desc").Find(&races)
 	return races, nil
 }
 
