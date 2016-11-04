@@ -99,6 +99,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//results should be order.
 	c.Assert(raceResults.Results[0].Position, Equals, 1)
+	c.Assert(raceResults.Results[0].SexPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].AgeCategoryPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].Time, Equals, "15:45")
 	c.Assert(raceResults.Results[0].AgeCategory, Equals, "20-29")
@@ -232,6 +233,7 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 	c.Assert(len(raceResults.Results), Equals, 38)
 	c.Assert(len(raceResults.Racers), Equals, 38)
 	c.Assert(raceResults.Results[0].AgeCategoryPosition, Equals, 1)
+	c.Assert(raceResults.Results[0].SexPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].BibNumber, Equals, "3662")
 
 }
@@ -259,7 +261,7 @@ func (s *TestSuite) Test04ImportFailed(c *C) {
 	c.Assert(err, Not(Equals), nil)
 }
 
-func (s *TestSuite) Test05ImportFailed(c *C) {
+func (s *TestSuite) Test05ImportDuplicate(c *C) {
 
 	//import a race
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
@@ -276,6 +278,12 @@ func (s *TestSuite) Test06Import(c *C) {
 	race, err := s.doImport("http://www.nlaa.ca/04-Road-Race.html")
 	c.Assert(race.Name, Equals, "ANE Mile")
 	c.Assert(err, Equals, nil)
+
+	var raceResults api.RaceResults
+	s.doRequest(race.ResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 61)
+	c.Assert(len(raceResults.Racers), Equals, 61)
+	c.Assert(raceResults.Results[0].SexPosition, Equals, 1)
 }
 
 func (s *TestSuite) Test07Import(c *C) {
