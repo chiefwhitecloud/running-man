@@ -20,6 +20,13 @@ type FeedResource struct {
 
 func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 
+	raceLastUpdated, err := r.Db.GetLastUpdatedRace()
+
+	if req.Header.Get("If-None-Match") == raceLastUpdated.ETag {
+		res.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	races, err := r.Db.GetRaces()
 
 	if err != nil {
@@ -40,6 +47,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("ETag", raceLastUpdated.ETag)
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(raceDetailsFormatted))
 
@@ -57,6 +65,11 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 
 	race, err := r.Db.GetRace(raceId)
 
+	if req.Header.Get("If-None-Match") == race.ETag {
+		res.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	raceFeed := FormatRaceForFeed(req, race)
 
 	raceFeedFormatted, err := json.Marshal(&raceFeed)
@@ -66,6 +79,7 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("ETag", race.ETag)
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(raceFeedFormatted))
 
@@ -238,6 +252,13 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 		http.Error(res, err.Error(), 404)
 	}
 
+	race, err := r.Db.GetRace(raceId)
+
+	if req.Header.Get("If-None-Match") == race.ETag {
+		res.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	rr, racers, races, err := r.Db.GetRaceResultsForRace(raceId, startPlace, recCount)
 
 	raceFeed := r.formatRaceResultsForFeed(req, rr, racers, races)
@@ -249,6 +270,7 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 	}
 
 	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("ETag", race.ETag)
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(raceFeedFormatted))
 
@@ -312,11 +334,6 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 		25: "80+",
 		26: "A",
 	}
-
-	//	"80-84", "85-89", "80-89",
-	//	"90-94", "95-99", "90-99",
-	//		"100-104", "105-109", "100-109",
-	//	}
 
 	mapRacers := map[string]api.Racer{}
 	for i := range racers {

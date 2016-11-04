@@ -1,6 +1,8 @@
 package database
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -35,6 +37,8 @@ type Race struct {
 	Date         time.Time
 	ImportStatus string
 	SrcUrl       string
+	ETag         string
+	LastUpdated  time.Time
 }
 
 type RaceResult struct {
@@ -253,12 +257,26 @@ func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 
 	}
 
+	t := time.Now()
+
+	h := sha1.New()
+	h.Write([]byte(race.Name + race.Date.String() + t.String()))
+	bs := h.Sum(nil)
+
 	race.ImportStatus = "completed"
+	race.LastUpdated = time.Now()
+	race.ETag = hex.EncodeToString(bs)
 	db.orm.Save(&race)
 
 	task.Status = "completed"
 	db.orm.Save(&task)
 
+	return race, nil
+}
+
+func (db *Db) GetLastUpdatedRace() (Race, error) {
+	race := Race{}
+	db.orm.Order("last_updated desc").First(&race)
 	return race, nil
 }
 

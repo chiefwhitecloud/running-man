@@ -298,6 +298,39 @@ func (s *TestSuite) Test07Import(c *C) {
 
 }
 
+func (s *TestSuite) Test08ETag(c *C) {
+
+	//import a race
+	race, err := s.doImport("http://www.nlaa.ca/05-Tely.html")
+	c.Assert(err, Equals, nil)
+	c.Assert(race.Name, Equals, "83rd Annual Tely 10 Mile Road Race")
+
+	//check etag on race self path
+	request := gorequest.New()
+	resp, _, _ := request.Get(race.SelfPath).End()
+	raceEtag := resp.Header.Get("ETag")
+	c.Assert(raceEtag, Not(Equals), "")
+	resp, _, _ = request.Get(race.SelfPath).Set("If-None-Match", raceEtag).End()
+	c.Assert(resp.StatusCode, Equals, 304)
+
+	//check etag on raceresults
+	request = gorequest.New()
+	resp, _, _ = request.Get(race.ResultsPath).End()
+	raceEtag = resp.Header.Get("ETag")
+	c.Assert(raceEtag, Not(Equals), "")
+	resp, _, _ = request.Get(race.ResultsPath).Set("If-None-Match", raceEtag).End()
+	c.Assert(resp.StatusCode, Equals, 304)
+
+	//check etag on race list
+	request = gorequest.New()
+	resp, _, _ = request.Get(fmt.Sprintf("%s/feed/races", s.host)).End()
+	raceListEtag := resp.Header.Get("ETag")
+	c.Assert(raceEtag, Not(Equals), "")
+	resp, _, _ = request.Get(race.ResultsPath).Set("If-None-Match", raceListEtag).End()
+	c.Assert(resp.StatusCode, Equals, 304)
+
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race
