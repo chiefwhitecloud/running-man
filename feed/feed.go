@@ -358,6 +358,7 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 			BibNumber:           raceresults[i].BibNumber,
 			Time:                raceresults[i].Time,
 			AgeCategory:         ageMap[raceresults[i].AgeCategoryID],
+			Club:                raceresults[i].Club,
 		}
 	}
 

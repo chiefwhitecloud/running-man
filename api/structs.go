@@ -49,6 +49,7 @@ type RaceResult struct {
 	BibNumber           string `json:"bibNumber"`
 	AgeCategory         string `json:"ageCategory"`
 	Sex                 string `json:"sex"`
+	Club                string `json:"club,omitempty"`
 }
 
 type RaceFeed struct {

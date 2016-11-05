@@ -104,6 +104,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	c.Assert(raceResults.Results[0].Time, Equals, "15:45")
 	c.Assert(raceResults.Results[0].AgeCategory, Equals, "20-29")
 	c.Assert(raceResults.Results[1].Position, Equals, 2)
+	c.Assert(raceResults.Results[1].Club, Equals, "PGNL")
 	c.Assert(raceResults.Results[2].Position, Equals, 3)
 	c.Assert(raceResults.Results[3].Position, Equals, 4)
 	c.Assert(raceResults.Results[4].Position, Equals, 5)

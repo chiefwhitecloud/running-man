@@ -55,6 +55,7 @@ type RaceResult struct {
 	Racer               Racer
 	Race                Race
 	Sex                 string
+	Club                string
 }
 
 type AgeCategory struct {
@@ -251,6 +252,9 @@ func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 			AgeCategoryID:       catId,
 			Time:                mRacer.Time,
 			Sex:                 mRacer.Sex,
+		}
+		if len(mRacer.Club) > 0 {
+			result.Club = mRacer.Club
 		}
 
 		db.orm.Create(&result)
@@ -475,7 +479,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 	db.orm.Find(&r, raceid)
 
 	rows, err := db.orm.Table("race_result").
-		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id").
+		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id, race_result.club").
 		Joins("join racer on race_result.racer_id = racer.id").
 		Where("race_result.race_id = ?", r.ID).
 		Order("race_result.position ASC").
@@ -496,6 +500,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 		sex                 string
 		agecat              int
 		racername           string
+		club                string
 	)
 
 	var results []RaceResult
@@ -506,7 +511,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 
 	defer rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat)
+		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat, &club)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -523,6 +528,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 			AgeCategoryID:       agecat,
 			Name:                racername,
 			Sex:                 sex,
+			Club:                club,
 		}
 
 		if startPosition > 0 {
