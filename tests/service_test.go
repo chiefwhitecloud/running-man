@@ -236,6 +236,7 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 	c.Assert(raceResults.Results[0].AgeCategoryPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].SexPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].BibNumber, Equals, "3662")
+	c.Assert(raceResults.Results[0].ChipTime, Equals, "49:25")
 
 }
 

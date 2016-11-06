@@ -124,7 +124,10 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	}
 
 	const position = `^[ ]*(?P<position>\d+)`
-	const bibNameTime = `[ ]+(?P<bib_number>\d+)[ ]+(?P<name>[\D\(\)]+)(?P<time>[\:\d]+)`
+	const bibName = `[ ]+(?P<bib_number>\d+)[ ]+(?P<name>[\D\(\)]+)`
+	const time = `(?P<time>[\:\d]+)`
+	const chiptime = `(?P<chiptime>[\:\d]+)`
+	const pace = `(?P<pace>[\:\d]+)`
 	const spaceOrMore = `[ ]+`
 	const sexPosition = `[\(]?(?P<sex_pos>\d+)[\)]?`
 	const sex = `(?P<sex>M|F|W|P)`
@@ -133,11 +136,13 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
 	const clubNameRegEx = `[^\(]*\((?P<club>\w{2,4})\)`
 
-	mainRegEx := position + bibNameTime + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition
+	mainRegEx := position + bibName + time + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition
 
 	re := regexp.MustCompile(mainRegEx)
-	re2 := regexp.MustCompile(position + bibNameTime + spaceOrMore + `L?` + sex + category + spaceOrMore + categoryPosition + spaceOrMore + sexPosition)
-	re3 := regexp.MustCompile(position + bibNameTime + `.{1}` + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition)
+	//Tely 10 Result
+	re2 := regexp.MustCompile(position + bibName + time + spaceOrMore + `L?` + sex + category + spaceOrMore + categoryPosition + spaceOrMore + sexPosition + spaceOrMore + pace + spaceOrMore + chiptime)
+	//Other format
+	re3 := regexp.MustCompile(position + bibName + time + `.{1}` + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition)
 	re4 := regexp.MustCompile(`^\s{0,}\d{1,} `)
 
 	clubName := regexp.MustCompile(clubNameRegEx)
@@ -206,6 +211,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				SexPosition:         sp,
 				AgeCategory:         md["category"],
 				AgeCategoryPosition: ap,
+				ChipTime:            md["chiptime"],
 			})
 		}
 	}

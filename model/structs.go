@@ -6,6 +6,7 @@ type Racer struct {
 	BibNumber           string
 	Club                string
 	Time                string
+	ChipTime            string
 	Sex                 string
 	SexPosition         int
 	AgeCategory         string

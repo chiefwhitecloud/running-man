@@ -52,6 +52,7 @@ type RaceResult struct {
 	AgeCategoryID       int `sql:"index"`
 	BibNumber           string
 	Time                string
+	ChipTime            string
 	Racer               Racer
 	Race                Race
 	Sex                 string
@@ -255,6 +256,10 @@ func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 		}
 		if len(mRacer.Club) > 0 {
 			result.Club = mRacer.Club
+		}
+
+		if len(mRacer.ChipTime) > 0 {
+			result.ChipTime = mRacer.ChipTime
 		}
 
 		db.orm.Create(&result)
@@ -479,7 +484,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 	db.orm.Find(&r, raceid)
 
 	rows, err := db.orm.Table("race_result").
-		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id, race_result.club").
+		Select("race_result.time, race_result.position, race_result.sex_position, race_result.age_category_position, race_result.bib_number, race_result.name, racer.id, race_result.id, race_result.sex, race_result.age_category_id, race_result.club, race_result.chip_time").
 		Joins("join racer on race_result.racer_id = racer.id").
 		Where("race_result.race_id = ?", r.ID).
 		Order("race_result.position ASC").
@@ -501,6 +506,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 		agecat              int
 		racername           string
 		club                string
+		chiptime            string
 	)
 
 	var results []RaceResult
@@ -511,7 +517,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 
 	defer rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat, &club)
+		err := rows.Scan(&time, &position, &sexposition, &agecategoryposition, &bibnumber, &racername, &racerid, &raceresultid, &sex, &agecat, &club, &chiptime)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -529,6 +535,7 @@ func (db *Db) GetRaceResultsForRace(raceid int, startPosition int, numOfRecords 
 			Name:                racername,
 			Sex:                 sex,
 			Club:                club,
+			ChipTime:            chiptime,
 		}
 
 		if startPosition > 0 {

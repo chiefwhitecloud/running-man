@@ -359,6 +359,7 @@ func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults [
 			Time:                raceresults[i].Time,
 			AgeCategory:         ageMap[raceresults[i].AgeCategoryID],
 			Club:                raceresults[i].Club,
+			ChipTime:            raceresults[i].ChipTime,
 		}
 	}
 
