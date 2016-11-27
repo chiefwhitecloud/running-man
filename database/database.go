@@ -31,6 +31,12 @@ type Racer struct {
 	Created time.Time
 }
 
+type RaceGroup struct {
+	ID       int
+	Name     string
+	Distance string
+}
+
 type Race struct {
 	ID           int
 	Name         string
@@ -81,7 +87,7 @@ type AgeResult struct {
 }
 
 func (db *Db) Migrate() {
-	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
+	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
 
 	cats := []string{
 		"U20", "-19",
@@ -103,12 +109,12 @@ func (db *Db) Migrate() {
 }
 
 func (db *Db) Create() {
-	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
+	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
 
 }
 
 func (db *Db) DropAllTables() {
-	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{})
+	db.orm.DropTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
 }
 
 func (db *Db) Open() error {
@@ -140,6 +146,18 @@ func (db *Db) FailedImport(task ImportTask, err error) {
 	db.orm.Delete(&Race{}, task.RaceID)
 	db.orm.Delete(&RaceResult{}, "race_id = ?", task.RaceID)
 
+}
+
+func (db *Db) CreateRaceGroup(name string, distance string) (RaceGroup, error) {
+	raceGroup := RaceGroup{Name: name, Distance: distance}
+	db.orm.Save(&raceGroup)
+	return raceGroup, nil
+}
+
+func (db *Db) GetRaceGroup(id int) (RaceGroup, error) {
+	raceGroup := RaceGroup{}
+	db.orm.First(&raceGroup, id)
+	return raceGroup, nil
 }
 
 func (db *Db) GetPendingImportTasks() []ImportTask {

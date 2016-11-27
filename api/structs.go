@@ -8,6 +8,19 @@ type RacerMerge struct {
 	RacerId string `json:"racerId"`
 }
 
+type RaceGroupCreate struct {
+	Name     string `json:"name"`
+	Distance string `json:"distance"`
+}
+
+type RaceGroup struct {
+	Id        int    `json:"id"`
+	Name      string `json:"name"`
+	Distance  string `json:"distance"`
+	SelfPath  string `json:"self"`
+	RacesPath string `json:"races"`
+}
+
 type Race struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`

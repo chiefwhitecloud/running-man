@@ -219,6 +219,59 @@ func (r *FeedResource) MergeRacer(res http.ResponseWriter, req *http.Request) {
 
 }
 
+func (r *FeedResource) CreateRaceGroup(res http.ResponseWriter, req *http.Request) {
+	v := req.Header.Get("Content-Type")
+	if v != "application/json" {
+		http.Error(res, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+
+	var raceGroup api.RaceGroupCreate
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&raceGroup)
+
+	if err != nil {
+		http.Error(res, "Bad Parameters", http.StatusBadRequest)
+		return
+	}
+
+	raceGroupDB, _ := r.Db.CreateRaceGroup(raceGroup.Name, raceGroup.Distance)
+
+	raceGroupFeed := FormatRaceGroupForFeed(req, raceGroupDB)
+
+	raceGroupFeedFormatted, _ := json.Marshal(&raceGroupFeed)
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+	res.Write([]byte(raceGroupFeedFormatted))
+
+}
+
+func (r *FeedResource) ListRaceGroups(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func (r *FeedResource) GetRaceGroup(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	raceGroupDB, _ := r.Db.GetRaceGroup(raceGroupId)
+
+	raceGroupFeed := FormatRaceGroupForFeed(req, raceGroupDB)
+
+	raceGroupFeedFormatted, _ := json.Marshal(&raceGroupFeed)
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(raceGroupFeedFormatted))
+}
+
 func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.Request) {
 
 	vars := mux.Vars(req)
@@ -282,6 +335,16 @@ func FormatImportTaskLocation(req *http.Request, taskId int) string {
 
 func FormatRaceLocation(req *http.Request, raceId int) string {
 	return fmt.Sprintf("http://%s/feed/race/%d", req.Host, raceId)
+}
+
+func FormatRaceGroupForFeed(req *http.Request, raceGroup database.RaceGroup) api.RaceGroup {
+	return api.RaceGroup{
+		Id:        raceGroup.ID,
+		Name:      raceGroup.Name,
+		Distance:  raceGroup.Distance,
+		SelfPath:  fmt.Sprintf("http://%s/feed/racegroup/%d", req.Host, raceGroup.ID),
+		RacesPath: fmt.Sprintf("http://%s/feed/racegroup/%d/races", req.Host, raceGroup.ID),
+	}
 }
 
 func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {

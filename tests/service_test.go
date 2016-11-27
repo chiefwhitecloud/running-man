@@ -341,6 +341,34 @@ func (s *TestSuite) Test08ETag(c *C) {
 
 }
 
+func (s *TestSuite) Test09CreateRaceGroup(c *C) {
+
+	var raceGroup api.RaceGroup
+	//create a new race group
+	request := gorequest.New()
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42km"}
+	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
+		Send(data).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+	jsonBlob := []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+	c.Assert(raceGroup.Name, Equals, "Marathon")
+	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
+
+	//fetch the race group via its self path
+	request = gorequest.New()
+	resp, body, _ = request.Get(raceGroup.SelfPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+	c.Assert(raceGroup.Name, Equals, "Marathon")
+	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
+
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race

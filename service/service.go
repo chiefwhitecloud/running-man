@@ -74,6 +74,9 @@ func (s *RunningManService) Run() error {
 	r.HandleFunc("/import/task/{id}", importer.CheckImportStatus).Methods("GET")
 
 	var feedRouter = r.PathPrefix("/feed/").Subrouter()
+	feedRouter.HandleFunc("/racegroup", feeds.CreateRaceGroup).Methods("POST")
+	feedRouter.HandleFunc("/racegroup", feeds.ListRaceGroups).Methods("GET")
+	feedRouter.HandleFunc("/racegroup/{id}", feeds.GetRaceGroup).Methods("GET")
 	feedRouter.HandleFunc("/races", feeds.ListRaces).Methods("GET")
 	feedRouter.HandleFunc("/race/{id}", feeds.GetRace).Methods("GET")
 	feedRouter.HandleFunc("/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")
