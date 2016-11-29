@@ -32,15 +32,18 @@ type Racer struct {
 }
 
 type RaceGroup struct {
-	ID       int
-	Name     string
-	Distance string
+	ID          int
+	Name        string
+	Distance    string
+	ETag        string
+	LastUpdated time.Time
 }
 
 type Race struct {
 	ID           int
 	Name         string
 	Date         time.Time
+	RaceGroupID  int `sql:"index"`
 	ImportStatus string
 	SrcUrl       string
 	ETag         string
@@ -149,7 +152,13 @@ func (db *Db) FailedImport(task ImportTask, err error) {
 }
 
 func (db *Db) CreateRaceGroup(name string, distance string) (RaceGroup, error) {
-	raceGroup := RaceGroup{Name: name, Distance: distance}
+
+	t := time.Now()
+	h := sha1.New()
+	h.Write([]byte(name + t.String()))
+	bs := h.Sum(nil)
+
+	raceGroup := RaceGroup{Name: name, Distance: distance, LastUpdated: time.Now(), ETag: hex.EncodeToString(bs)}
 	db.orm.Save(&raceGroup)
 	return raceGroup, nil
 }
@@ -307,6 +316,24 @@ func (db *Db) GetLastUpdatedRace() (Race, error) {
 	return race, nil
 }
 
+func (db *Db) GetLastUpdatedRaceGroup() (RaceGroup, error) {
+	raceGroup := RaceGroup{}
+	db.orm.Order("last_updated desc").First(&raceGroup)
+	return raceGroup, nil
+}
+
+func (db *Db) GetRaceGroups() ([]RaceGroup, error) {
+	raceGroups := []RaceGroup{}
+	db.orm.Order("name desc").Find(&raceGroups)
+	return raceGroups, nil
+}
+
+func (db *Db) GetRacesForRaceGroup(raceGroupId int) ([]Race, error) {
+	races := []Race{}
+	db.orm.Where("race_group_id = ?", raceGroupId).Find(&races)
+	return races, nil
+}
+
 func (db *Db) GetRaces() ([]Race, error) {
 	races := []Race{}
 	db.orm.Order("date desc").Find(&races)
@@ -335,6 +362,11 @@ func (db *Db) MergeRacers(parentRacer Racer, racer Racer) (Racer, error) {
 	//update all race results with the new id
 	db.orm.Exec("UPDATE race_result SET racer_id=? WHERE racer_id =?", parentRacer.ID, racer.ID)
 	return parentRacer, nil
+}
+
+func (db *Db) AddRaceToRaceGroup(raceGroup RaceGroup, race Race) (RaceGroup, error) {
+	db.orm.Exec("UPDATE race SET race_group_id=? WHERE id=?", raceGroup.ID, race.ID)
+	return raceGroup, nil
 }
 
 func (db *Db) isAgeRangeWithinCatgory(minAge int, maxAge int, ageCategory string) (bool, error) {

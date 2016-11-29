@@ -8,6 +8,10 @@ type RacerMerge struct {
 	RacerId string `json:"racerId"`
 }
 
+type RaceGroupAddRace struct {
+	RaceId string `json:"raceId"`
+}
+
 type RaceGroupCreate struct {
 	Name     string `json:"name"`
 	Distance string `json:"distance"`
@@ -68,4 +72,8 @@ type RaceResult struct {
 
 type RaceFeed struct {
 	Races []Race `json:"races"`
+}
+
+type RaceGroupFeed struct {
+	RaceGroups []RaceGroup `json:"raceGroups"`
 }

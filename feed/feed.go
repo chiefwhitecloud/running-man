@@ -33,14 +33,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), 500)
 	}
 
-	raceList := make([]api.Race, len(races))
-	for i, _ := range races {
-		raceList[i] = FormatRaceForFeed(req, races[i])
-	}
-
-	feed := api.RaceFeed{Races: raceList}
-
-	raceDetailsFormatted, err := json.Marshal(&feed)
+	raceDetailsFormatted, err := FormatRacesForFeed(req, races)
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
@@ -49,7 +42,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	res.Header().Set("ETag", raceLastUpdated.ETag)
 	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(raceDetailsFormatted))
+	res.Write(raceDetailsFormatted)
 
 }
 
@@ -170,6 +163,66 @@ func (r *FeedResource) GetRaceResultsForRacer(res http.ResponseWriter, req *http
 
 }
 
+func (r *FeedResource) GetRacesForRaceGroup(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	races, err := r.Db.GetRacesForRaceGroup(int(raceGroupId))
+
+	racesFeed, err := FormatRacesForFeed(req, races)
+
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(racesFeed)
+}
+
+func (r *FeedResource) AddRaceToRaceGroup(res http.ResponseWriter, req *http.Request) {
+
+	vars := mux.Vars(req)
+
+	var addRaceGroup api.RaceGroupAddRace
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&addRaceGroup)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	raceId, err := strconv.Atoi(addRaceGroup.RaceId)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	race, err := r.Db.GetRace(raceId)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	raceGroup, err := r.Db.GetRaceGroup(raceGroupId)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	r.Db.AddRaceToRaceGroup(raceGroup, race)
+
+	res.WriteHeader(http.StatusOK)
+}
+
 func (r *FeedResource) MergeRacer(res http.ResponseWriter, req *http.Request) {
 
 	vars := mux.Vars(req)
@@ -250,6 +303,37 @@ func (r *FeedResource) CreateRaceGroup(res http.ResponseWriter, req *http.Reques
 
 func (r *FeedResource) ListRaceGroups(res http.ResponseWriter, req *http.Request) {
 
+	raceGroupLastUpdated, err := r.Db.GetLastUpdatedRaceGroup()
+
+	if req.Header.Get("If-None-Match") == raceGroupLastUpdated.ETag {
+		res.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	raceGroups, err := r.Db.GetRaceGroups()
+
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	raceGroupList := make([]api.RaceGroup, len(raceGroups))
+	for i, _ := range raceGroups {
+		raceGroupList[i] = FormatRaceGroupForFeed(req, raceGroups[i])
+	}
+
+	feed := api.RaceGroupFeed{RaceGroups: raceGroupList}
+
+	raceGroupFormatted, err := json.Marshal(&feed)
+
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("ETag", raceGroupLastUpdated.ETag)
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(raceGroupFormatted))
+
 }
 
 func (r *FeedResource) GetRaceGroup(res http.ResponseWriter, req *http.Request) {
@@ -261,7 +345,7 @@ func (r *FeedResource) GetRaceGroup(res http.ResponseWriter, req *http.Request) 
 		http.Error(res, err.Error(), 404)
 	}
 
-	raceGroupDB, _ := r.Db.GetRaceGroup(raceGroupId)
+	raceGroupDB, _ := r.Db.GetRaceGroup(int(raceGroupId))
 
 	raceGroupFeed := FormatRaceGroupForFeed(req, raceGroupDB)
 
@@ -327,104 +411,4 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(raceFeedFormatted))
 
-}
-
-func FormatImportTaskLocation(req *http.Request, taskId int) string {
-	return fmt.Sprintf("http://%s/import/task/%d", req.Host, taskId)
-}
-
-func FormatRaceLocation(req *http.Request, raceId int) string {
-	return fmt.Sprintf("http://%s/feed/race/%d", req.Host, raceId)
-}
-
-func FormatRaceGroupForFeed(req *http.Request, raceGroup database.RaceGroup) api.RaceGroup {
-	return api.RaceGroup{
-		Id:        raceGroup.ID,
-		Name:      raceGroup.Name,
-		Distance:  raceGroup.Distance,
-		SelfPath:  fmt.Sprintf("http://%s/feed/racegroup/%d", req.Host, raceGroup.ID),
-		RacesPath: fmt.Sprintf("http://%s/feed/racegroup/%d/races", req.Host, raceGroup.ID),
-	}
-}
-
-func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
-	return api.Race{
-		Id:          race.ID,
-		Name:        race.Name,
-		SelfPath:    fmt.Sprintf("http://%s/feed/race/%d", req.Host, race.ID),
-		ResultsPath: fmt.Sprintf("http://%s/feed/race/%d/results", req.Host, race.ID),
-		Date:        fmt.Sprintf("%0.4d-%0.2d-%0.2d", race.Date.Year(), race.Date.Month(), race.Date.Day()),
-	}
-}
-
-func (r *FeedResource) formatRacerForFeed(req *http.Request, racer database.Racer) api.Racer {
-	return api.Racer{
-		Id:          racer.ID,
-		SelfPath:    fmt.Sprintf("http://%s/feed/racer/%d", req.Host, racer.ID),
-		ResultsPath: fmt.Sprintf("http://%s/feed/racer/%d/results", req.Host, racer.ID),
-		ProfilePath: fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
-		MergePath:   fmt.Sprintf("http://%s/feed/racer/%d/merge", req.Host, racer.ID),
-	}
-}
-
-func (r *FeedResource) formatRaceResultsForFeed(req *http.Request, raceresults []database.RaceResult, racers []database.Racer, races []database.Race) api.RaceResults {
-
-	ageMap := map[int]string{
-		1:  "U20",
-		2:  "-19",
-		3:  "20-24",
-		4:  "25-29",
-		5:  "20-29",
-		6:  "30-34",
-		7:  "35-39",
-		8:  "30-39",
-		9:  "40-44",
-		10: "45-49",
-		11: "40-49",
-		12: "50-54",
-		13: "55-59",
-		14: "50-59",
-		15: "60-64",
-		16: "65-69",
-		17: "60-69",
-		18: "70-74",
-		19: "75-79",
-		20: "70-79",
-		21: "70+",
-		22: "80-84",
-		23: "85-89",
-		24: "80-89",
-		25: "80+",
-		26: "A",
-	}
-
-	mapRacers := map[string]api.Racer{}
-	for i := range racers {
-		mapRacers[strconv.Itoa(racers[i].ID)] = r.formatRacerForFeed(req, racers[i])
-	}
-
-	mapRaces := map[string]api.Race{}
-	for i := range races {
-		mapRaces[strconv.Itoa(races[i].ID)] = FormatRaceForFeed(req, races[i])
-	}
-
-	rr := make([]api.RaceResult, len(raceresults))
-	for i := range raceresults {
-		rr[i] = api.RaceResult{
-			Name:                raceresults[i].Name,
-			Position:            raceresults[i].Position,
-			SexPosition:         raceresults[i].SexPosition,
-			Sex:                 raceresults[i].Sex,
-			AgeCategoryPosition: raceresults[i].AgeCategoryPosition,
-			RacerID:             strconv.Itoa(raceresults[i].RacerID),
-			RaceID:              strconv.Itoa(raceresults[i].RaceID),
-			BibNumber:           raceresults[i].BibNumber,
-			Time:                raceresults[i].Time,
-			AgeCategory:         ageMap[raceresults[i].AgeCategoryID],
-			Club:                raceresults[i].Club,
-			ChipTime:            raceresults[i].ChipTime,
-		}
-	}
-
-	return api.RaceResults{Results: rr, Racers: mapRacers, Races: mapRaces}
 }

@@ -75,8 +75,10 @@ func (s *RunningManService) Run() error {
 
 	var feedRouter = r.PathPrefix("/feed/").Subrouter()
 	feedRouter.HandleFunc("/racegroup", feeds.CreateRaceGroup).Methods("POST")
-	feedRouter.HandleFunc("/racegroup", feeds.ListRaceGroups).Methods("GET")
+	feedRouter.HandleFunc("/racegroups", feeds.ListRaceGroups).Methods("GET")
 	feedRouter.HandleFunc("/racegroup/{id}", feeds.GetRaceGroup).Methods("GET")
+	feedRouter.HandleFunc("/racegroup/{id}/races", feeds.AddRaceToRaceGroup).Methods("POST")
+	feedRouter.HandleFunc("/racegroup/{id}/races", feeds.GetRacesForRaceGroup).Methods("GET")
 	feedRouter.HandleFunc("/races", feeds.ListRaces).Methods("GET")
 	feedRouter.HandleFunc("/race/{id}", feeds.GetRace).Methods("GET")
 	feedRouter.HandleFunc("/race/{id}/results", feeds.GetRaceResultsForRace).Methods("GET")

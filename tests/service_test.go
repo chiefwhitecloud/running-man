@@ -367,6 +367,40 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	c.Assert(raceGroup.Distance, Equals, "42km")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
+	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
+	c.Assert(race.Id, Equals, 1)
+
+	//get a list of race groups
+	var raceGroups api.RaceGroupFeed
+	request = gorequest.New()
+	resp, body, _ = request.Get(s.host + "/feed/racegroups").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroups)
+	c.Assert(raceGroups.RaceGroups[0].Name, Equals, "Marathon")
+	c.Assert(raceGroups.RaceGroups[0].Distance, Equals, "42km")
+	c.Assert(raceGroups.RaceGroups[0].SelfPath, Equals, s.host+"/feed/racegroup/1")
+	c.Assert(raceGroups.RaceGroups[0].RacesPath, Equals, s.host+"/feed/racegroup/1/races")
+
+	//add the race to the group
+	request = gorequest.New()
+	addRace := api.RaceGroupAddRace{RaceId: strconv.Itoa(race.Id)}
+	resp, _, _ = request.Post(raceGroups.RaceGroups[0].RacesPath).
+		Send(addRace).
+		End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	//race should be returned on the races path now..
+	request = gorequest.New()
+	resp, body, _ = request.Get(raceGroups.RaceGroups[0].RacesPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	jsonBlob = []byte(body)
+	var races api.RaceFeed
+	json.Unmarshal(jsonBlob, &races)
+	c.Assert(len(races.Races), Equals, 1)
+
 }
 
 func (s *TestSuite) doImport(path string) (api.Race, error) {
