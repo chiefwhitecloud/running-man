@@ -17,6 +17,16 @@ func FormatRaceLocation(req *http.Request, raceId int) string {
 	return fmt.Sprintf("http://%s/feed/race/%d", req.Host, raceId)
 }
 
+func FormatRaceGroupsForFeed(req *http.Request, raceGroups []database.RaceGroup) api.RaceGroupFeed {
+
+	raceGroupList := make([]api.RaceGroup, len(raceGroups))
+	for i, _ := range raceGroups {
+		raceGroupList[i] = FormatRaceGroupForFeed(req, raceGroups[i])
+	}
+
+	return api.RaceGroupFeed{RaceGroups: raceGroupList}
+}
+
 func FormatRaceGroupForFeed(req *http.Request, raceGroup database.RaceGroup) api.RaceGroup {
 	return api.RaceGroup{
 		Id:        raceGroup.ID,

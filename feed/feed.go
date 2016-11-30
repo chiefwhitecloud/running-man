@@ -26,7 +26,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), 500)
 	}
 
-	if ok, _ := IsETagValid(res, req, raceLastUpdated.ETag); ok {
+	if ok, _ := SendNotModifiedIfETagIsValid(res, req, raceLastUpdated.ETag); ok {
 		return
 	}
 
@@ -50,7 +50,7 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 
 	race, err := r.Db.GetRace(raceId)
 
-	if ok, err := IsETagValid(res, req, race.ETag); err == nil && !ok {
+	if ok, err := SendNotModifiedIfETagIsValid(res, req, race.ETag); err == nil && !ok {
 		SendJsonWithETag(res, FormatRaceForFeed(req, race), race.ETag)
 	}
 }
@@ -257,11 +257,13 @@ func (r *FeedResource) CreateRaceGroup(res http.ResponseWriter, req *http.Reques
 
 func (r *FeedResource) ListRaceGroups(res http.ResponseWriter, req *http.Request) {
 
-	raceGroupLastUpdated, err := r.Db.GetLastUpdatedRaceGroup()
+	var etag string
 
-	if req.Header.Get("If-None-Match") == raceGroupLastUpdated.ETag {
-		res.WriteHeader(http.StatusNotModified)
-		return
+	if raceGroupLastUpdated, err := r.Db.GetLastUpdatedRaceGroup(); err == nil {
+		if ok, _ := SendNotModifiedIfETagIsValid(res, req, raceGroupLastUpdated.ETag); ok {
+			return
+		}
+		etag = raceGroupLastUpdated.ETag
 	}
 
 	raceGroups, err := r.Db.GetRaceGroups()
@@ -270,24 +272,11 @@ func (r *FeedResource) ListRaceGroups(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), 500)
 	}
 
-	raceGroupList := make([]api.RaceGroup, len(raceGroups))
-	for i, _ := range raceGroups {
-		raceGroupList[i] = FormatRaceGroupForFeed(req, raceGroups[i])
+	if len(etag) > 0 {
+		SendJsonWithETag(res, FormatRaceGroupsForFeed(req, raceGroups), etag)
+	} else {
+		SendJson(res, FormatRaceGroupsForFeed(req, raceGroups))
 	}
-
-	feed := api.RaceGroupFeed{RaceGroups: raceGroupList}
-
-	raceGroupFormatted, err := json.Marshal(&feed)
-
-	if err != nil {
-		http.Error(res, err.Error(), 500)
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.Header().Set("ETag", raceGroupLastUpdated.ETag)
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(raceGroupFormatted))
-
 }
 
 func (r *FeedResource) GetRaceGroup(res http.ResponseWriter, req *http.Request) {
@@ -349,7 +338,7 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 		return
 	}
 
-	if ok, _ := IsETagValid(res, req, race.ETag); ok {
+	if ok, _ := SendNotModifiedIfETagIsValid(res, req, race.ETag); ok {
 		return
 	}
 

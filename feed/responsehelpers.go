@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-func IsETagValid(res http.ResponseWriter, req *http.Request, etag string) (bool, error) {
-	if req.Header.Get("If-None-Match") == etag {
+func SendNotModifiedIfETagIsValid(res http.ResponseWriter, req *http.Request, etag string) (bool, error) {
+	if req.Header.Get("If-None-Match") != "" && req.Header.Get("If-None-Match") == etag {
 		res.WriteHeader(http.StatusNotModified)
 		return true, nil
 	} else {
