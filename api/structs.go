@@ -26,11 +26,12 @@ type RaceGroup struct {
 }
 
 type Race struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	SelfPath    string `json:"self"`
-	ResultsPath string `json:"results"`
-	Date        string `json:"date"`
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+	SelfPath      string `json:"self"`
+	ResultsPath   string `json:"results"`
+	Date          string `json:"date"`
+	RaceGroupPath string `json:"raceGroup,omitempty"`
 }
 
 type Racer struct {

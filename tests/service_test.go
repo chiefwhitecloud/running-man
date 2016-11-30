@@ -400,6 +400,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	var races api.RaceFeed
 	json.Unmarshal(jsonBlob, &races)
 	c.Assert(len(races.Races), Equals, 1)
+	c.Assert(races.Races[0].RaceGroupPath, Equals, s.host+"/feed/racegroup/1")
 
 }
 

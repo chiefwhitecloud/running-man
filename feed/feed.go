@@ -22,8 +22,11 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 
 	raceLastUpdated, err := r.Db.GetLastUpdatedRace()
 
-	if req.Header.Get("If-None-Match") == raceLastUpdated.ETag {
-		res.WriteHeader(http.StatusNotModified)
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	if ok, _ := IsETagValid(res, req, raceLastUpdated.ETag); ok {
 		return
 	}
 
@@ -32,18 +35,7 @@ func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
-
-	raceDetailsFormatted, err := FormatRacesForFeed(req, races)
-
-	if err != nil {
-		http.Error(res, err.Error(), 500)
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.Header().Set("ETag", raceLastUpdated.ETag)
-	res.WriteHeader(http.StatusOK)
-	res.Write(raceDetailsFormatted)
-
+	SendJsonWithETag(res, FormatRacesForFeed(req, races), raceLastUpdated.ETag)
 }
 
 func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
@@ -58,24 +50,9 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 
 	race, err := r.Db.GetRace(raceId)
 
-	if req.Header.Get("If-None-Match") == race.ETag {
-		res.WriteHeader(http.StatusNotModified)
-		return
+	if ok, err := IsETagValid(res, req, race.ETag); err == nil && !ok {
+		SendJsonWithETag(res, FormatRaceForFeed(req, race), race.ETag)
 	}
-
-	raceFeed := FormatRaceForFeed(req, race)
-
-	raceFeedFormatted, err := json.Marshal(&raceFeed)
-
-	if err != nil {
-		http.Error(res, err.Error(), 500)
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.Header().Set("ETag", race.ETag)
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(raceFeedFormatted))
-
 }
 
 func (r *FeedResource) GetRacer(res http.ResponseWriter, req *http.Request) {
@@ -89,17 +66,12 @@ func (r *FeedResource) GetRacer(res http.ResponseWriter, req *http.Request) {
 	}
 
 	racer, err := r.Db.GetRacer(racerId)
-	racerFeed := r.formatRacerForFeed(req, racer)
-	racerFeedFormatted, err := json.Marshal(&racerFeed)
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(racerFeedFormatted))
-
+	SendJson(res, FormatRacerForFeed(req, racer))
 }
 
 func (r *FeedResource) GetRacerProfile(res http.ResponseWriter, req *http.Request) {
@@ -125,15 +97,7 @@ func (r *FeedResource) GetRacerProfile(res http.ResponseWriter, req *http.Reques
 		BirthDateHigh: fmt.Sprintf("%0.4d-%0.2d-%0.2d", highBirthDate.Year(), highBirthDate.Month(), highBirthDate.Day()),
 	}
 
-	racerFeedFormatted, err := json.Marshal(&racerProfile)
-
-	if err != nil {
-		http.Error(res, err.Error(), 500)
-	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(racerFeedFormatted))
+	SendJson(res, racerProfile)
 
 }
 
@@ -149,18 +113,11 @@ func (r *FeedResource) GetRaceResultsForRacer(res http.ResponseWriter, req *http
 
 	rr, racers, races, err := r.Db.GetRaceResultsForRacer(uint(racerId))
 
-	raceFeed := r.formatRaceResultsForFeed(req, rr, racers, races)
-
-	raceFeedFormatted, err := json.Marshal(&raceFeed)
-
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(raceFeedFormatted))
-
+	SendJson(res, FormatRaceResultsForFeed(req, rr, racers, races))
 }
 
 func (r *FeedResource) GetRacesForRaceGroup(res http.ResponseWriter, req *http.Request) {
@@ -174,15 +131,12 @@ func (r *FeedResource) GetRacesForRaceGroup(res http.ResponseWriter, req *http.R
 
 	races, err := r.Db.GetRacesForRaceGroup(int(raceGroupId))
 
-	racesFeed, err := FormatRacesForFeed(req, races)
-
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(racesFeed)
+	SendJson(res, FormatRacesForFeed(req, races))
+
 }
 
 func (r *FeedResource) AddRaceToRaceGroup(res http.ResponseWriter, req *http.Request) {
@@ -390,25 +344,21 @@ func (r *FeedResource) GetRaceResultsForRace(res http.ResponseWriter, req *http.
 	}
 
 	race, err := r.Db.GetRace(raceId)
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+		return
+	}
 
-	if req.Header.Get("If-None-Match") == race.ETag {
-		res.WriteHeader(http.StatusNotModified)
+	if ok, _ := IsETagValid(res, req, race.ETag); ok {
 		return
 	}
 
 	rr, racers, races, err := r.Db.GetRaceResultsForRace(raceId, startPlace, recCount)
 
-	raceFeed := r.formatRaceResultsForFeed(req, rr, racers, races)
-
-	raceFeedFormatted, err := json.Marshal(&raceFeed)
-
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.Header().Set("ETag", race.ETag)
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(raceFeedFormatted))
+	SendJsonWithETag(res, FormatRaceResultsForFeed(req, rr, racers, races), race.ETag)
 
 }
