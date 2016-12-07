@@ -35,6 +35,17 @@ func SendJson(res http.ResponseWriter, entity interface{}) error {
 	return nil
 }
 
+func SendSuccess(res http.ResponseWriter) error {
+	b, err := json.Marshal(map[string]interface{}{"success": 1})
+	if err != nil {
+		return err
+	}
+	jsonResponse(res)
+	res.WriteHeader(http.StatusOK)
+	res.Write(b)
+	return nil
+}
+
 func jsonResponse(res http.ResponseWriter) {
 	res.Header().Set("Content-Type", "application/json")
 }

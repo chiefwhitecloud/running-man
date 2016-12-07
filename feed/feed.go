@@ -174,7 +174,7 @@ func (r *FeedResource) AddRaceToRaceGroup(res http.ResponseWriter, req *http.Req
 
 	r.Db.AddRaceToRaceGroup(raceGroup, race)
 
-	res.WriteHeader(http.StatusOK)
+	SendSuccess(res)
 }
 
 func (r *FeedResource) MergeRacer(res http.ResponseWriter, req *http.Request) {
