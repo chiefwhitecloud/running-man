@@ -152,15 +152,18 @@ func (db *Db) FailedImport(task ImportTask, err error) {
 }
 
 func (db *Db) CreateRaceGroup(name string, distance string) (RaceGroup, error) {
+	etag, lastUpdated := db.CreateEtagAndLastUpdated(name)
+	raceGroup := RaceGroup{Name: name, Distance: distance, LastUpdated: lastUpdated, ETag: etag}
+	db.orm.Save(&raceGroup)
+	return raceGroup, nil
+}
 
+func (db *Db) CreateEtagAndLastUpdated(name string) (string, time.Time) {
 	t := time.Now()
 	h := sha1.New()
 	h.Write([]byte(name + t.String()))
 	bs := h.Sum(nil)
-
-	raceGroup := RaceGroup{Name: name, Distance: distance, LastUpdated: time.Now(), ETag: hex.EncodeToString(bs)}
-	db.orm.Save(&raceGroup)
-	return raceGroup, nil
+	return hex.EncodeToString(bs), t
 }
 
 func (db *Db) GetRaceGroup(id int) (RaceGroup, error) {
@@ -365,7 +368,18 @@ func (db *Db) MergeRacers(parentRacer Racer, racer Racer) (Racer, error) {
 }
 
 func (db *Db) AddRaceToRaceGroup(raceGroup RaceGroup, race Race) (RaceGroup, error) {
-	db.orm.Exec("UPDATE race SET race_group_id=? WHERE id=?", raceGroup.ID, race.ID)
+
+	etag, lastUpdated := db.CreateEtagAndLastUpdated(race.Name)
+	race.LastUpdated = lastUpdated
+	race.ETag = etag
+	race.RaceGroupID = raceGroup.ID
+	db.orm.Save(&race)
+
+	etag, lastUpdated = db.CreateEtagAndLastUpdated(raceGroup.Name)
+	raceGroup.LastUpdated = lastUpdated
+	raceGroup.ETag = etag
+	db.orm.Save(&raceGroup)
+
 	return raceGroup, nil
 }
 
