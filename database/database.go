@@ -166,6 +166,16 @@ func (db *Db) CreateEtagAndLastUpdated(name string) (string, time.Time) {
 	return hex.EncodeToString(bs), t
 }
 
+func (db *Db) DeleteRaceGroup(id int) (RaceGroup, error) {
+	raceGroup := RaceGroup{}
+	if db.orm.First(&raceGroup, id).RecordNotFound() {
+		return raceGroup, errors.New("math: square root of negative number")
+	}
+
+	db.orm.Delete(&raceGroup)
+	return raceGroup, nil
+}
+
 func (db *Db) GetRaceGroup(id int) (RaceGroup, error) {
 	raceGroup := RaceGroup{}
 	db.orm.First(&raceGroup, id)

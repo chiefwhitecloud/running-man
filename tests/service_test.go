@@ -404,6 +404,43 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 
 }
 
+func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
+
+	var raceGroup api.RaceGroup
+	//create a new race group
+	request := gorequest.New()
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42km"}
+	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
+		Send(data).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+	jsonBlob := []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+	c.Assert(raceGroup.Name, Equals, "Marathon")
+	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
+
+	var raceGroups api.RaceGroupFeed
+	request = gorequest.New()
+	resp, body, _ = request.Get(s.host + "/feed/racegroups").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroups)
+	c.Assert(raceGroups.RaceGroups[0].Name, Equals, "Marathon")
+
+	deleteRequest := gorequest.New()
+	resp, _, _ = deleteRequest.Delete(raceGroup.SelfPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	request = gorequest.New()
+	resp, body, _ = request.Get(s.host + "/feed/racegroups").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroups)
+	c.Assert(len(raceGroups.RaceGroups), Equals, 0)
+
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race

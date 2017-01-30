@@ -255,6 +255,24 @@ func (r *FeedResource) CreateRaceGroup(res http.ResponseWriter, req *http.Reques
 
 }
 
+func (r *FeedResource) DeleteRaceGroup(res http.ResponseWriter, req *http.Request) {
+
+	vars := mux.Vars(req)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	//raceGroupDB, _ := r.Db.GetRaceGroup(int(raceGroupId))
+
+	_, _ = r.Db.DeleteRaceGroup(int(raceGroupId))
+
+	res.WriteHeader(http.StatusOK)
+
+}
+
 func (r *FeedResource) ListRaceGroups(res http.ResponseWriter, req *http.Request) {
 
 	var etag string

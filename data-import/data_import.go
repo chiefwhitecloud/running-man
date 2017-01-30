@@ -54,7 +54,7 @@ func (r *DataImportResource) DoImport(res http.ResponseWriter, req *http.Request
 	res.Header().Set("Location", feed.FormatImportTaskLocation(req, importTask.ID))
 	res.WriteHeader(http.StatusAccepted)
 
-	r.ImportResults(importTask)
+	go r.ImportResults(importTask)
 }
 
 func (r *DataImportResource) ImportResults(task database.ImportTask) {
