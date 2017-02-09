@@ -169,10 +169,30 @@ func (db *Db) CreateEtagAndLastUpdated(name string) (string, time.Time) {
 func (db *Db) DeleteRaceGroup(id int) (RaceGroup, error) {
 	raceGroup := RaceGroup{}
 	if db.orm.First(&raceGroup, id).RecordNotFound() {
-		return raceGroup, errors.New("math: square root of negative number")
+		return raceGroup, errors.New("Race Group not found")
 	}
 
-	db.orm.Delete(&raceGroup)
+	races, _ := db.GetRacesForRaceGroup(raceGroup.ID)
+
+	for i, _ := range races {
+		etag, lastUpdated := db.CreateEtagAndLastUpdated(races[i].Name)
+		races[i].LastUpdated = lastUpdated
+		races[i].ETag = etag
+		db.orm.Save(&races[i])
+	}
+
+	if err := db.orm.Delete(&raceGroup).Error; err != nil {
+		return raceGroup, err
+	}
+
+	//update the etag for the newest item... this is the etag used to the list
+	if raceGroupLastUpdated, err := db.GetLastUpdatedRaceGroup(); err == nil {
+		etag, lastUpdated := db.CreateEtagAndLastUpdated(raceGroupLastUpdated.Name)
+		raceGroupLastUpdated.LastUpdated = lastUpdated
+		raceGroupLastUpdated.ETag = etag
+		db.orm.Save(&raceGroupLastUpdated)
+	}
+
 	return raceGroup, nil
 }
 
@@ -331,13 +351,19 @@ func (db *Db) GetLastUpdatedRace() (Race, error) {
 
 func (db *Db) GetLastUpdatedRaceGroup() (RaceGroup, error) {
 	raceGroup := RaceGroup{}
+
 	db.orm.Order("last_updated desc").First(&raceGroup)
+
+	if raceGroup.Name == "" {
+		return raceGroup, errors.New("No race groups found")
+	}
+
 	return raceGroup, nil
 }
 
 func (db *Db) GetRaceGroups() ([]RaceGroup, error) {
 	raceGroups := []RaceGroup{}
-	db.orm.Order("name desc").Find(&raceGroups)
+	db.orm.Order("name asc").Find(&raceGroups)
 	return raceGroups, nil
 }
 

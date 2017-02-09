@@ -265,9 +265,9 @@ func (r *FeedResource) DeleteRaceGroup(res http.ResponseWriter, req *http.Reques
 		http.Error(res, err.Error(), 404)
 	}
 
-	//raceGroupDB, _ := r.Db.GetRaceGroup(int(raceGroupId))
-
-	_, _ = r.Db.DeleteRaceGroup(int(raceGroupId))
+	if _, err := r.Db.DeleteRaceGroup(int(raceGroupId)); err != nil {
+		http.Error(res, err.Error(), 500)
+	}
 
 	res.WriteHeader(http.StatusOK)
 
