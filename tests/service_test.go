@@ -66,7 +66,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	jsonBlob := []byte(body)
 	var races api.RaceFeed
-	err := json.Unmarshal(jsonBlob, &races)
+	json.Unmarshal(jsonBlob, &races)
 
 	c.Assert(len(races.Races), Equals, 1)
 	c.Assert(races.Races[0].Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
@@ -80,7 +80,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	resp, body, _ = request.Get(raceSelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
 	jsonBlob = []byte(body)
-	err = json.Unmarshal(jsonBlob, &race)
+	err := json.Unmarshal(jsonBlob, &race)
 
 	c.Assert(err, Equals, nil)
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
@@ -436,6 +436,28 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroups)
 	c.Assert(raceGroups.RaceGroups[0].Name, Equals, "Marathon")
 
+	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
+	c.Assert(race.Id, Equals, 1)
+
+	request = gorequest.New()
+	resp, _, _ = request.Get(race.SelfPath).End()
+	originalRaceEtag := resp.Header.Get("ETag")
+	c.Assert(originalRaceEtag, Not(Equals), "")
+
+	request = gorequest.New()
+	addRace := api.RaceGroupAddRace{RaceId: strconv.Itoa(race.Id)}
+	resp, _, _ = request.Post(raceGroups.RaceGroups[0].RacesPath).
+		Send(addRace).
+		End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	request = gorequest.New()
+	resp, _, _ = request.Get(race.SelfPath).End()
+	updatedRaceEtag := resp.Header.Get("ETag")
+	c.Assert(updatedRaceEtag, Not(Equals), "")
+	c.Assert(updatedRaceEtag, Not(Equals), originalRaceEtag)
+
 	deleteRequest := gorequest.New()
 	resp, _, _ = deleteRequest.Delete(raceGroup.SelfPath).End()
 	c.Assert(resp.StatusCode, Equals, 200)
@@ -447,6 +469,12 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroups)
 	c.Assert(resp.Header.Get("ETag"), Equals, "")
 	c.Assert(len(raceGroups.RaceGroups), Equals, 0)
+
+	request = gorequest.New()
+	resp, _, _ = request.Get(race.SelfPath).End()
+	updatedAfterDeleteRaceEtag := resp.Header.Get("ETag")
+	c.Assert(updatedAfterDeleteRaceEtag, Not(Equals), "")
+	c.Assert(updatedAfterDeleteRaceEtag, Not(Equals), updatedRaceEtag)
 
 }
 
