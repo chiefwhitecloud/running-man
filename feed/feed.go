@@ -20,22 +20,27 @@ type FeedResource struct {
 
 func (r *FeedResource) ListRaces(res http.ResponseWriter, req *http.Request) {
 
-	raceLastUpdated, err := r.Db.GetLastUpdatedRace()
+	var etag string
+
+	if raceLastUpdated, err := r.Db.GetLastUpdatedRace(); err == nil {
+		if ok, _ := SendNotModifiedIfETagIsValid(res, req, raceLastUpdated.ETag); ok {
+			return
+		}
+		etag = raceLastUpdated.ETag
+	}
+
+	raceGroups, err := r.Db.GetRaces()
 
 	if err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
-	if ok, _ := SendNotModifiedIfETagIsValid(res, req, raceLastUpdated.ETag); ok {
-		return
+	if len(etag) > 0 {
+		SendJsonWithETag(res, FormatRacesForFeed(req, raceGroups), etag)
+	} else {
+		SendJson(res, FormatRacesForFeed(req, raceGroups))
 	}
 
-	races, err := r.Db.GetRaces()
-
-	if err != nil {
-		http.Error(res, err.Error(), 500)
-	}
-	SendJsonWithETag(res, FormatRacesForFeed(req, races), raceLastUpdated.ETag)
 }
 
 func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
@@ -53,6 +58,24 @@ func (r *FeedResource) GetRace(res http.ResponseWriter, req *http.Request) {
 	if ok, err := SendNotModifiedIfETagIsValid(res, req, race.ETag); err == nil && !ok {
 		SendJsonWithETag(res, FormatRaceForFeed(req, race), race.ETag)
 	}
+}
+
+func (r *FeedResource) DeleteRace(res http.ResponseWriter, req *http.Request) {
+
+	vars := mux.Vars(req)
+
+	raceId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	if _, err := r.Db.DeleteRace(int(raceId)); err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	res.WriteHeader(http.StatusOK)
+
 }
 
 func (r *FeedResource) GetRacer(res http.ResponseWriter, req *http.Request) {

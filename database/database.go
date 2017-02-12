@@ -346,6 +346,11 @@ func (db *Db) SaveRace(task ImportTask, r *model.RaceDetails) (Race, error) {
 func (db *Db) GetLastUpdatedRace() (Race, error) {
 	race := Race{}
 	db.orm.Order("last_updated desc").First(&race)
+
+	if race.Name == "" {
+		return race, errors.New("No race found")
+	}
+
 	return race, nil
 }
 
@@ -382,6 +387,27 @@ func (db *Db) GetRaces() ([]Race, error) {
 func (db *Db) GetRace(id int) (Race, error) {
 	race := Race{}
 	db.orm.First(&race, id)
+	return race, nil
+}
+
+func (db *Db) DeleteRace(id int) (Race, error) {
+	race := Race{}
+	if db.orm.First(&race, id).RecordNotFound() {
+		return race, errors.New("Race not found")
+	}
+
+	if err := db.orm.Delete(&race).Error; err != nil {
+		return race, err
+	}
+
+	//update the etag for the newest item... this is the etag used to the list
+	if raceLastUpdated, err := db.GetLastUpdatedRace(); err == nil {
+		etag, lastUpdated := db.CreateEtagAndLastUpdated(raceLastUpdated.Name)
+		raceLastUpdated.LastUpdated = lastUpdated
+		raceLastUpdated.ETag = etag
+		db.orm.Save(&raceLastUpdated)
+	}
+
 	return race, nil
 }
 

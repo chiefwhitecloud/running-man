@@ -478,6 +478,44 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 
 }
 
+func (s *TestSuite) Test11DeleteRace(c *C) {
+
+	var races api.RaceFeed
+	request := gorequest.New()
+	resp, body, _ := request.Get(s.host + "/feed/races").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	c.Assert(resp.Header.Get("ETag"), Equals, "")
+	jsonBlob := []byte(body)
+	json.Unmarshal(jsonBlob, &races)
+	c.Assert(len(races.Races), Equals, 0)
+
+	//create a new race
+	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
+	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
+	c.Assert(race.Id, Equals, 1)
+
+	request = gorequest.New()
+	resp, body, _ = request.Get(s.host + "/feed/races").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	c.Assert(resp.Header.Get("ETag"), Not(Equals), "")
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &races)
+	c.Assert(len(races.Races), Equals, 1)
+
+	deleteRequest := gorequest.New()
+	resp, _, _ = deleteRequest.Delete(race.SelfPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+
+	request = gorequest.New()
+	resp, body, _ = request.Get(s.host + "/feed/races").End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &races)
+	c.Assert(resp.Header.Get("ETag"), Equals, "")
+	c.Assert(len(races.Races), Equals, 0)
+
+}
+
 func (s *TestSuite) doImport(path string) (api.Race, error) {
 
 	var race api.Race
