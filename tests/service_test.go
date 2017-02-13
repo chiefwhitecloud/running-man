@@ -231,12 +231,13 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 
 	var raceResults api.RaceResults
 	s.doRequest(races.Races[0].ResultsPath, &raceResults)
-	c.Assert(len(raceResults.Results), Equals, 38)
-	c.Assert(len(raceResults.Racers), Equals, 38)
+	c.Assert(len(raceResults.Results), Equals, 40)
+	c.Assert(len(raceResults.Racers), Equals, 40)
 	c.Assert(raceResults.Results[0].AgeCategoryPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].SexPosition, Equals, 1)
 	c.Assert(raceResults.Results[0].BibNumber, Equals, "3662")
 	c.Assert(raceResults.Results[0].ChipTime, Equals, "49:25")
+	c.Assert(raceResults.Results[len(raceResults.Results)-1].ChipTime, Equals, " ")
 
 }
 
@@ -253,6 +254,10 @@ func (s *TestSuite) Test03ImportRoadRace(c *C) {
 	s.doRequest(race.ResultsPath, &raceResults)
 	c.Assert(len(raceResults.Results), Equals, 18)
 	c.Assert(len(raceResults.Racers), Equals, 18)
+	var result = raceResults.Results[0]
+	c.Assert(result.Name, Equals, "PATRICK O'GRADY")
+	c.Assert(result.AgeCategory, Equals, "U20")
+	c.Assert(result.Time, Equals, "16:51")
 }
 
 // Import a race from 2008

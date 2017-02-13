@@ -93,7 +93,7 @@ func (db *Db) Migrate() {
 	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
 
 	cats := []string{
-		"U20", "-19",
+		"U20", "-19", "<20",
 		"20-24", "25-29", "20-29",
 		"30-34", "35-39", "30-39",
 		"40-44", "45-49", "40-49",
@@ -101,7 +101,7 @@ func (db *Db) Migrate() {
 		"60-64", "65-69", "60-69",
 		"70-74", "75-79", "70-79",
 		"70+", "80-84", "85-89",
-		"80-89", "80+", "A",
+		"80-89", "80+", "A", "NOAGE",
 	}
 
 	for i := 0; i < len(cats); i++ {
@@ -460,6 +460,7 @@ func (db *Db) GetMinMaxAgeForCategory(ageCategory string) (int, int, error) {
 	ageCategoryMap := map[string]*AgeLookup{
 		"U20":   &AgeLookup{5, 19},
 		"-19":   &AgeLookup{5, 19},
+		"<20":   &AgeLookup{5, 19},
 		"20-24": &AgeLookup{20, 24},
 		"25-29": &AgeLookup{25, 29},
 		"20-29": &AgeLookup{20, 29},
@@ -484,6 +485,7 @@ func (db *Db) GetMinMaxAgeForCategory(ageCategory string) (int, int, error) {
 		"80-89": &AgeLookup{80, 89},
 		"80+":   &AgeLookup{80, 100},
 		"A":     &AgeLookup{5, 100},
+		"NOAGE": &AgeLookup{5, 100},
 	}
 	if age, ok := ageCategoryMap[ageCategory]; ok {
 		return age.minAge, age.maxAge, nil
