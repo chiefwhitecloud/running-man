@@ -50,6 +50,10 @@ func (c *RaceFetcherStub) GetRawResults(resultsurl string) ([]byte, error) {
 		absPath, _ := filepath.Abs("test-data/05-Tely.html")
 		byes, _ := ioutil.ReadFile(absPath)
 		return byes, nil
+	} else if u.Path == "/06-Tely.html" {
+		absPath, _ := filepath.Abs("test-data/06-Tely.html")
+		byes, _ := ioutil.ReadFile(absPath)
+		return byes, nil
 	} else {
 		return []byte(`{"raceUrl": "Hello"}`), nil
 	}

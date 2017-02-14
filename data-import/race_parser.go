@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -143,7 +144,8 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	re2 := regexp.MustCompile(position + bibName + time + spaceOrMore + `L?` + sex + category + spaceOrMore + categoryPosition + spaceOrMore + sexPosition + spaceOrMore + pace + spaceOrMore + chiptime)
 	//Other format
 	re3 := regexp.MustCompile(position + bibName + time + `.{1}` + spaceOrMore + sex + sexPosition + spaceOrMore + category + spaceOrMore + categoryPosition)
-	re4 := regexp.MustCompile(`^\s{0,}\d{1,} `)
+	re4 := regexp.MustCompile(position + bibName + time + spaceOrMore + sex + spaceOrMore + categoryPosition + spaceOrMore + sexPosition)
+	re5 := regexp.MustCompile(`^\s{0,}\d{1,} `)
 
 	clubName := regexp.MustCompile(clubNameRegEx)
 
@@ -151,7 +153,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	n2 := re2.SubexpNames()
 	n3 := re3.SubexpNames()
 
-	var racerResults []model.Racer
+	raceResultsMap := make(map[int]model.Racer)
 
 	for i := 0; i < len(raceRows); i++ {
 		var r2 [][]string
@@ -176,7 +178,12 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				md[n3[i]] = n
 			}
 		} else if re4.MatchString(raceRows[i]) {
-			log.Println("Failed to parse result with " + re2.String())
+			r2 = re4.FindAllStringSubmatch(raceRows[i], -1)
+			for i, n := range r2[0] {
+				md[n2[i]] = n
+			}
+		} else if re5.MatchString(raceRows[i]) {
+			log.Println("Failed to parse result with " + re4.String())
 			return model.RaceDetails{}, errors.New("Failed to parse line : " + raceRows[i])
 		} else {
 			//log.Println("Skipping line in race result for " + resultsTitle)
@@ -202,7 +209,8 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				md["name"] = strings.Replace(md["name"], "("+runnersClubName+")", "", 1)
 			}
 
-			racerResults = append(racerResults, model.Racer{Position: p,
+			raceResultsMap[p] = model.Racer{
+				Position:            p,
 				Name:                strings.TrimSpace(md["name"]),
 				BibNumber:           md["bib_number"],
 				Club:                runnersClubName,
@@ -212,12 +220,23 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				AgeCategory:         md["category"],
 				AgeCategoryPosition: ap,
 				ChipTime:            md["chiptime"],
-			})
+			}
 		}
 	}
 
-	if len(racerResults) == 0 {
+	if len(raceResultsMap) == 0 {
 		return model.RaceDetails{}, errors.New("Failed to parse race results")
+	}
+
+	var keys []int
+	var racerResults []model.Racer
+
+	for k := range raceResultsMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	for _, k := range keys {
+		racerResults = append(racerResults, raceResultsMap[k])
 	}
 
 	race := model.RaceDetails{Racers: racerResults, Name: resultsTitle, Year: raceYear, Month: raceMonth, Day: raceDay}

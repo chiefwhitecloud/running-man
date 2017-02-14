@@ -313,6 +313,21 @@ func (s *TestSuite) Test07Import(c *C) {
 
 }
 
+func (s *TestSuite) Test071Import(c *C) {
+
+	//import a race
+	race, err := s.doImport("http://www.nlaa.ca/06-Tely.html")
+	c.Assert(err, Equals, nil)
+	c.Assert(race.Name, Equals, "78th Tely 10 Mile Road Race")
+
+	var raceResults api.RaceResults
+	s.doRequest(race.ResultsPath, &raceResults)
+	c.Assert(len(raceResults.Results), Equals, 64)
+
+	var result = raceResults.Results[0]
+	c.Assert(result.Name, Equals, "Colin Fewer")
+}
+
 func (s *TestSuite) Test08ETag(c *C) {
 
 	//import a race
