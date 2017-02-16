@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/chiefwhitecloud/running-man/api"
@@ -57,7 +56,7 @@ func (s *TestSuite) Test01Import(c *C) {
 	//import a race
 	race, _ := s.doImport("http://www.nlaa.ca/00-Road-Race.html")
 	c.Assert(race.Name, Equals, "Boston Pizza Flat Out 5 km Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 
 	// fetch the race list
 	request := gorequest.New()
@@ -195,7 +194,7 @@ func (s *TestSuite) Test01Import(c *C) {
 
 	//merge andrea white and andrea sparkes
 	andreaWhiteMergePath := raceResults.Racers[raceResults.Results[0].RacerID].MergePath
-	var merge = api.RacerMerge{RacerId: strconv.Itoa(andreaSparkesId)}
+	var merge = api.RacerMerge{RacerId: andreaSparkesId}
 	resp, _, _ = request.Post(andreaWhiteMergePath).
 		Send(merge).
 		End()
@@ -212,7 +211,7 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 
 	race, _ := s.doImport("http://www.nlaa.ca/02-Tely.html")
 	c.Assert(race.Name, Equals, "88th Annual Tely 10 Mile Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 
 	// fetch the race list
 	request := gorequest.New()
@@ -247,7 +246,7 @@ func (s *TestSuite) Test03ImportRoadRace(c *C) {
 	//import a race
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 	c.Assert(race.ResultsPath, Equals, s.host+"/feed/race/1/results")
 
 	var raceResults api.RaceResults
@@ -389,7 +388,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 
 	//get a list of race groups
 	var raceGroups api.RaceGroupFeed
@@ -405,7 +404,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 
 	//add the race to the group
 	request = gorequest.New()
-	addRace := api.RaceGroupAddRace{RaceId: strconv.Itoa(race.Id)}
+	addRace := api.RaceGroupAddRace{RaceId: race.Id}
 	resp, _, _ = request.Post(raceGroups.RaceGroups[0].RacesPath).
 		Send(addRace).
 		End()
@@ -458,7 +457,7 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 
 	request = gorequest.New()
 	resp, _, _ = request.Get(race.SelfPath).End()
@@ -466,7 +465,7 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	c.Assert(originalRaceEtag, Not(Equals), "")
 
 	request = gorequest.New()
-	addRace := api.RaceGroupAddRace{RaceId: strconv.Itoa(race.Id)}
+	addRace := api.RaceGroupAddRace{RaceId: race.Id}
 	resp, _, _ = request.Post(raceGroups.RaceGroups[0].RacesPath).
 		Send(addRace).
 		End()
@@ -512,7 +511,7 @@ func (s *TestSuite) Test11DeleteRace(c *C) {
 	//create a new race
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
 	c.Assert(race.Name, Equals, "Nautilus Mundy Pond 5km Road Race")
-	c.Assert(race.Id, Equals, 1)
+	c.Assert(race.Id, Equals, "1")
 
 	request = gorequest.New()
 	resp, body, _ = request.Get(s.host + "/feed/races").End()

@@ -18,7 +18,7 @@ type RaceGroupCreate struct {
 }
 
 type RaceGroup struct {
-	Id        int    `json:"id"`
+	Id        string `json:"id"`
 	Name      string `json:"name"`
 	Distance  string `json:"distance"`
 	SelfPath  string `json:"self"`
@@ -26,7 +26,7 @@ type RaceGroup struct {
 }
 
 type Race struct {
-	Id            int    `json:"id"`
+	Id            string `json:"id"`
 	Name          string `json:"name"`
 	SelfPath      string `json:"self"`
 	ResultsPath   string `json:"results"`
@@ -35,7 +35,7 @@ type Race struct {
 }
 
 type Racer struct {
-	Id          int    `json:"id"`
+	Id          string `json:"id"`
 	SelfPath    string `json:"self"`
 	ResultsPath string `json:"results"`
 	ProfilePath string `json:"profile"`

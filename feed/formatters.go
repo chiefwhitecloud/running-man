@@ -29,7 +29,7 @@ func FormatRaceGroupsForFeed(req *http.Request, raceGroups []database.RaceGroup)
 
 func FormatRaceGroupForFeed(req *http.Request, raceGroup database.RaceGroup) api.RaceGroup {
 	return api.RaceGroup{
-		Id:        raceGroup.ID,
+		Id:        strconv.Itoa(raceGroup.ID),
 		Name:      raceGroup.Name,
 		Distance:  raceGroup.Distance,
 		SelfPath:  fmt.Sprintf("http://%s/feed/racegroup/%d", req.Host, raceGroup.ID),
@@ -49,7 +49,7 @@ func FormatRacesForFeed(req *http.Request, races []database.Race) api.RaceFeed {
 
 func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 	raceStruct := api.Race{
-		Id:          race.ID,
+		Id:          strconv.Itoa(race.ID),
 		Name:        race.Name,
 		SelfPath:    fmt.Sprintf("http://%s/feed/race/%d", req.Host, race.ID),
 		ResultsPath: fmt.Sprintf("http://%s/feed/race/%d/results", req.Host, race.ID),
@@ -65,7 +65,7 @@ func FormatRaceForFeed(req *http.Request, race database.Race) api.Race {
 
 func FormatRacerForFeed(req *http.Request, racer database.Racer) api.Racer {
 	return api.Racer{
-		Id:          racer.ID,
+		Id:          strconv.Itoa(racer.ID),
 		SelfPath:    fmt.Sprintf("http://%s/feed/racer/%d", req.Host, racer.ID),
 		ResultsPath: fmt.Sprintf("http://%s/feed/racer/%d/results", req.Host, racer.ID),
 		ProfilePath: fmt.Sprintf("http://%s/feed/racer/%d/profile", req.Host, racer.ID),
