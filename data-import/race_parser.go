@@ -128,7 +128,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	const bibName = `[ ]+(?P<bib_number>\d+)[ ]+(?P<name>[\D\(\)]+)`
 	const time = `(?P<time>[\:\d]+)`
 	const chiptime = `(?P<chiptime>[\:\d]+|[ ]+)`
-	const pace = `(?P<pace>[\:\d]+)`
+	const pace = `(?P<pace>[\:\d]+|[ ]+)`
 	const spaceOrMore = `[ ]+`
 	const sexPosition = `[\(]?(?P<sex_pos>\d+)[\)]?`
 	const sex = `(?P<sex>M|F|W|P)`
