@@ -134,7 +134,7 @@ func (db *Db) Open() error {
 }
 
 func (db *Db) CreateImportTask(url string) (ImportTask, error) {
-	race := Race{Name: "Pending", ImportStatus: "pending", SrcUrl: url}
+	race := Race{Name: "Pending", ImportStatus: "pending", SrcUrl: url, LastUpdated: time.Now()}
 	err := db.orm.Create(&race).Error
 	if err != nil {
 		log.Printf("%s", err)
