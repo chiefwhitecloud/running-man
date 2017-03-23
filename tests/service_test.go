@@ -365,7 +365,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	var raceGroup api.RaceGroup
 	//create a new race group
 	request := gorequest.New()
-	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnit: "k"}
 	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
 		Send(data).
 		End()
@@ -374,7 +374,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
 	c.Assert(raceGroup.Distance, Equals, "42")
-	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.DistanceUnit, Equals, "k")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	//fetch the race group via its self path
@@ -385,7 +385,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
 	c.Assert(raceGroup.Distance, Equals, "42")
-	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.DistanceUnit, Equals, "k")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
@@ -401,7 +401,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroups)
 	c.Assert(raceGroups.RaceGroups[0].Name, Equals, "Marathon")
 	c.Assert(raceGroups.RaceGroups[0].Distance, Equals, "42")
-	c.Assert(raceGroups.RaceGroups[0].DistanceUnits, Equals, "km")
+	c.Assert(raceGroups.RaceGroups[0].DistanceUnit, Equals, "k")
 	c.Assert(raceGroups.RaceGroups[0].SelfPath, Equals, s.host+"/feed/racegroup/1")
 	c.Assert(raceGroups.RaceGroups[0].RacesPath, Equals, s.host+"/feed/racegroup/1/races")
 
@@ -431,7 +431,7 @@ func (s *TestSuite) Test095UpdateRaceGroup(c *C) {
 	var raceGroup api.RaceGroup
 	//create a new race group
 	request := gorequest.New()
-	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnit: "k"}
 	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
 		Send(data).
 		End()
@@ -447,11 +447,11 @@ func (s *TestSuite) Test095UpdateRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
 	c.Assert(raceGroup.Distance, Equals, "42")
-	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.DistanceUnit, Equals, "k")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	request = gorequest.New()
-	data = api.RaceGroupCreate{Name: "Marathon 3", Distance: "42.5", DistanceUnits: "km"}
+	data = api.RaceGroupCreate{Name: "Marathon 3", Distance: "42.5", DistanceUnit: "k"}
 	resp, body, _ = request.Put(raceGroup.SelfPath).
 		Send(data).
 		End()
@@ -460,7 +460,7 @@ func (s *TestSuite) Test095UpdateRaceGroup(c *C) {
 	c.Assert(resp.StatusCode, Equals, 200)
 	c.Assert(raceGroup.Name, Equals, "Marathon 3")
 	c.Assert(raceGroup.Distance, Equals, "42.5")
-	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.DistanceUnit, Equals, "k")
 }
 
 func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
@@ -474,7 +474,7 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	var raceGroup api.RaceGroup
 	//create a new race group
 	request = gorequest.New()
-	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnit: "k"}
 	resp, body, _ = request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
 		Send(data).
 		End()
@@ -484,7 +484,7 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
 	c.Assert(raceGroup.Distance, Equals, "42")
-	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.DistanceUnit, Equals, "k")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	request = gorequest.New()

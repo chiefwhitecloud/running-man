@@ -28,7 +28,7 @@ func (r *FeedResource) CreateRaceGroup(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	raceGroupDB, _ := r.Db.CreateRaceGroup(raceGroup.Name, raceGroup.Distance, raceGroup.DistanceUnits)
+	raceGroupDB, _ := r.Db.CreateRaceGroup(raceGroup.Name, raceGroup.Distance, raceGroup.DistanceUnit)
 
 	raceGroupFeed := FormatRaceGroupForFeed(req, raceGroupDB)
 
@@ -69,7 +69,7 @@ func (r *FeedResource) UpdateRaceGroup(res http.ResponseWriter, req *http.Reques
 
 	var raceGroupUpdated database.RaceGroup
 
-	if raceGroupUpdated, err = r.Db.UpdateRaceGroup(raceGroupDB.ID, raceGroup.Name, raceGroup.Distance, raceGroup.DistanceUnits); err != nil {
+	if raceGroupUpdated, err = r.Db.UpdateRaceGroup(raceGroupDB.ID, raceGroup.Name, raceGroup.Distance, raceGroup.DistanceUnit); err != nil {
 		http.Error(res, err.Error(), 500)
 	}
 
