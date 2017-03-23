@@ -29,11 +29,12 @@ func FormatRaceGroupsForFeed(req *http.Request, raceGroups []database.RaceGroup)
 
 func FormatRaceGroupForFeed(req *http.Request, raceGroup database.RaceGroup) api.RaceGroup {
 	return api.RaceGroup{
-		Id:        strconv.Itoa(raceGroup.ID),
-		Name:      raceGroup.Name,
-		Distance:  raceGroup.Distance,
-		SelfPath:  fmt.Sprintf("http://%s/feed/racegroup/%d", req.Host, raceGroup.ID),
-		RacesPath: fmt.Sprintf("http://%s/feed/racegroup/%d/races", req.Host, raceGroup.ID),
+		Id:            strconv.Itoa(raceGroup.ID),
+		Name:          raceGroup.Name,
+		Distance:      raceGroup.Distance,
+		DistanceUnits: raceGroup.DistanceUnits,
+		SelfPath:      fmt.Sprintf("http://%s/feed/racegroup/%d", req.Host, raceGroup.ID),
+		RacesPath:     fmt.Sprintf("http://%s/feed/racegroup/%d/races", req.Host, raceGroup.ID),
 	}
 }
 

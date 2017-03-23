@@ -13,16 +13,18 @@ type RaceGroupAddRace struct {
 }
 
 type RaceGroupCreate struct {
-	Name     string `json:"name"`
-	Distance string `json:"distance"`
+	Name          string `json:"name"`
+	Distance      string `json:"distance"`
+	DistanceUnits string `json:"distanceUnits"`
 }
 
 type RaceGroup struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	Distance  string `json:"distance"`
-	SelfPath  string `json:"self"`
-	RacesPath string `json:"races"`
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	Distance      string `json:"distance"`
+	DistanceUnits string `json:"distanceUnits"`
+	SelfPath      string `json:"self"`
+	RacesPath     string `json:"races"`
 }
 
 type Race struct {

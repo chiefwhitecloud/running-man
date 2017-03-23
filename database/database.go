@@ -32,11 +32,12 @@ type Racer struct {
 }
 
 type RaceGroup struct {
-	ID          int
-	Name        string
-	Distance    string
-	ETag        string
-	LastUpdated time.Time
+	ID            int
+	Name          string
+	Distance      string
+	DistanceUnits string
+	ETag          string
+	LastUpdated   time.Time
 }
 
 type Race struct {
@@ -78,12 +79,6 @@ type AgeLookup struct {
 	maxAge int
 }
 
-type raceResultForTransform struct {
-	pos   int
-	first string
-	last  string
-}
-
 type AgeResult struct {
 	RaceDate    time.Time
 	AgeCategory string
@@ -113,7 +108,6 @@ func (db *Db) Migrate() {
 
 func (db *Db) Create() {
 	db.orm.CreateTable(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
-
 }
 
 func (db *Db) DropAllTables() {
@@ -155,9 +149,21 @@ func (db *Db) FailedImport(task ImportTask, err error) {
 
 }
 
-func (db *Db) CreateRaceGroup(name string, distance string) (RaceGroup, error) {
+func (db *Db) CreateRaceGroup(name string, distance string, distanceunits string) (RaceGroup, error) {
 	etag, lastUpdated := db.CreateEtagAndLastUpdated(name)
-	raceGroup := RaceGroup{Name: name, Distance: distance, LastUpdated: lastUpdated, ETag: etag}
+	raceGroup := RaceGroup{Name: name, Distance: distance, DistanceUnits: distanceunits, LastUpdated: lastUpdated, ETag: etag}
+	db.orm.Save(&raceGroup)
+	return raceGroup, nil
+}
+
+func (db *Db) UpdateRaceGroup(id int, name string, distance string, distanceunits string) (RaceGroup, error) {
+	raceGroup, _ := db.GetRaceGroup(id)
+	etag, lastUpdated := db.CreateEtagAndLastUpdated(name)
+	raceGroup.Name = name
+	raceGroup.Distance = distance
+	raceGroup.DistanceUnits = distanceunits
+	raceGroup.LastUpdated = lastUpdated
+	raceGroup.ETag = etag
 	db.orm.Save(&raceGroup)
 	return raceGroup, nil
 }
@@ -202,7 +208,9 @@ func (db *Db) DeleteRaceGroup(id int) (RaceGroup, error) {
 
 func (db *Db) GetRaceGroup(id int) (RaceGroup, error) {
 	raceGroup := RaceGroup{}
-	db.orm.First(&raceGroup, id)
+	if err := db.orm.First(&raceGroup, id).Error; err != nil {
+		return raceGroup, err
+	}
 	return raceGroup, nil
 }
 

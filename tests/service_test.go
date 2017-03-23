@@ -365,7 +365,7 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	var raceGroup api.RaceGroup
 	//create a new race group
 	request := gorequest.New()
-	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42km"}
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
 	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
 		Send(data).
 		End()
@@ -373,7 +373,8 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	jsonBlob := []byte(body)
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
-	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.Distance, Equals, "42")
+	c.Assert(raceGroup.DistanceUnits, Equals, "km")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	//fetch the race group via its self path
@@ -383,7 +384,8 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	jsonBlob = []byte(body)
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
-	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.Distance, Equals, "42")
+	c.Assert(raceGroup.DistanceUnits, Equals, "km")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	race, _ := s.doImport("http://www.nlaa.ca/03-Road-Race.html")
@@ -398,7 +400,8 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 	jsonBlob = []byte(body)
 	json.Unmarshal(jsonBlob, &raceGroups)
 	c.Assert(raceGroups.RaceGroups[0].Name, Equals, "Marathon")
-	c.Assert(raceGroups.RaceGroups[0].Distance, Equals, "42km")
+	c.Assert(raceGroups.RaceGroups[0].Distance, Equals, "42")
+	c.Assert(raceGroups.RaceGroups[0].DistanceUnits, Equals, "km")
 	c.Assert(raceGroups.RaceGroups[0].SelfPath, Equals, s.host+"/feed/racegroup/1")
 	c.Assert(raceGroups.RaceGroups[0].RacesPath, Equals, s.host+"/feed/racegroup/1/races")
 
@@ -423,6 +426,43 @@ func (s *TestSuite) Test09CreateRaceGroup(c *C) {
 
 }
 
+func (s *TestSuite) Test095UpdateRaceGroup(c *C) {
+
+	var raceGroup api.RaceGroup
+	//create a new race group
+	request := gorequest.New()
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
+	resp, body, _ := request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
+		Send(data).
+		End()
+	c.Assert(resp.StatusCode, Equals, 201)
+	jsonBlob := []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+
+	//fetch the race group via its self path
+	request = gorequest.New()
+	resp, body, _ = request.Get(raceGroup.SelfPath).End()
+	c.Assert(resp.StatusCode, Equals, 200)
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+	c.Assert(raceGroup.Name, Equals, "Marathon")
+	c.Assert(raceGroup.Distance, Equals, "42")
+	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
+
+	request = gorequest.New()
+	data = api.RaceGroupCreate{Name: "Marathon 3", Distance: "42.5", DistanceUnits: "km"}
+	resp, body, _ = request.Put(raceGroup.SelfPath).
+		Send(data).
+		End()
+	jsonBlob = []byte(body)
+	json.Unmarshal(jsonBlob, &raceGroup)
+	c.Assert(resp.StatusCode, Equals, 200)
+	c.Assert(raceGroup.Name, Equals, "Marathon 3")
+	c.Assert(raceGroup.Distance, Equals, "42.5")
+	c.Assert(raceGroup.DistanceUnits, Equals, "km")
+}
+
 func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 
 	var raceGroups api.RaceGroupFeed
@@ -434,7 +474,7 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	var raceGroup api.RaceGroup
 	//create a new race group
 	request = gorequest.New()
-	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42km"}
+	data := api.RaceGroupCreate{Name: "Marathon", Distance: "42", DistanceUnits: "km"}
 	resp, body, _ = request.Post(fmt.Sprintf("%s/feed/racegroup", s.host)).
 		Send(data).
 		End()
@@ -443,7 +483,8 @@ func (s *TestSuite) Test10DeleteRaceGroup(c *C) {
 	jsonBlob := []byte(body)
 	json.Unmarshal(jsonBlob, &raceGroup)
 	c.Assert(raceGroup.Name, Equals, "Marathon")
-	c.Assert(raceGroup.Distance, Equals, "42km")
+	c.Assert(raceGroup.Distance, Equals, "42")
+	c.Assert(raceGroup.DistanceUnits, Equals, "km")
 	c.Assert(raceGroup.SelfPath, Equals, s.host+"/feed/racegroup/1")
 
 	request = gorequest.New()
@@ -564,7 +605,6 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 					return nil
 				}
 			} else if resp.StatusCode == 500 {
-				log.Println(resp.Body)
 				return errors.New("Import Failed")
 			} else {
 				return errors.New("Unknown status")

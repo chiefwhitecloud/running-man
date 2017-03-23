@@ -77,6 +77,7 @@ func (s *RunningManService) Run() error {
 	feedRouter.HandleFunc("/racegroup", feeds.CreateRaceGroup).Methods("POST")
 	feedRouter.HandleFunc("/racegroups", feeds.ListRaceGroups).Methods("GET")
 	feedRouter.HandleFunc("/racegroup/{id}", feeds.DeleteRaceGroup).Methods("DELETE")
+	feedRouter.HandleFunc("/racegroup/{id}", feeds.UpdateRaceGroup).Methods("PUT")
 	feedRouter.HandleFunc("/racegroup/{id}", feeds.GetRaceGroup).Methods("GET")
 	feedRouter.HandleFunc("/racegroup/{id}/races", feeds.AddRaceToRaceGroup).Methods("POST")
 	feedRouter.HandleFunc("/racegroup/{id}/races", feeds.GetRacesForRaceGroup).Methods("GET")
