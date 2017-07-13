@@ -3,6 +3,7 @@ package dataimport
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
 	"sort"
@@ -14,6 +15,11 @@ import (
 )
 
 var _ = log.Print
+
+var errRaceResultsNotFoundInHTML = errors.New("Results not found in HTML")
+var errRaceTitleNotFoundInHTML = errors.New("Race title not found in HTML")
+var errRaceDateNotFoundInHTML = errors.New("Race date not found in HTML")
+var errRaceDateParseFailed = errors.New("Race date parsing failed")
 
 func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 
@@ -69,14 +75,14 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	}
 
 	if results == "" {
-		return model.RaceDetails{}, errors.New("Results not found in HTML")
+		return model.RaceDetails{}, errRaceResultsNotFoundInHTML
 	}
 
 	raceRows := strings.Split(results, "\n")
 	raceRows = append(raceRows[:0], raceRows[1:]...)
 
 	if resultsTitle == "" {
-		return model.RaceDetails{}, errors.New("Title tag not found in HTML")
+		return model.RaceDetails{}, errRaceTitleNotFoundInHTML
 	}
 
 	raceTitles := strings.Split(resultsTitle, ":")
@@ -95,11 +101,9 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 	r3 := dateReg.FindAllStringSubmatch(resultsAddress, -1)
 	var r4 []string
 	if r3 == nil {
-		log.Println(resultsAddress)
-		return model.RaceDetails{}, errors.New("Date not found in " + resultsTitle)
-	} else {
-		r4 = r3[0]
+		return model.RaceDetails{}, errRaceDateNotFoundInHTML
 	}
+	r4 = r3[0]
 
 	monthMap := map[string]int{
 		"JANUARY":   1,
@@ -121,7 +125,7 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		raceDay, _ = strconv.Atoi(r4[2])
 		raceYear, _ = strconv.Atoi(r4[4])
 	} else {
-		return model.RaceDetails{}, errors.New("Could not find race date")
+		return model.RaceDetails{}, errRaceDateParseFailed
 	}
 
 	const position = `^[ ]*(?P<position>\d+)`
@@ -185,18 +189,24 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 		} else if re5.MatchString(raceRows[i]) {
 			log.Println("Failed to parse result with " + re4.String())
 			return model.RaceDetails{}, errors.New("Failed to parse line : " + raceRows[i])
-		} else {
-			//log.Println("Skipping line in race result for " + resultsTitle)
-			//log.Println(raceRows[i])
 		}
 
 		if len(r2) > 0 {
 
-			p, _ := strconv.Atoi(md["position"])
+			p, err := strconv.Atoi(md["position"])
+			if err != nil {
+				return model.RaceDetails{}, fmt.Errorf("Failed to parse position in %s", raceRows[i])
+			}
 
-			sp, _ := strconv.Atoi(md["sex_pos"])
+			sp, err := strconv.Atoi(md["sex_pos"])
+			if err != nil {
+				return model.RaceDetails{}, fmt.Errorf("Failed to parse sex position in '%s'", raceRows[i])
+			}
 
-			ap, _ := strconv.Atoi(md["category_position"])
+			ap, err := strconv.Atoi(md["category_position"])
+			if err != nil {
+				return model.RaceDetails{}, fmt.Errorf("Failed to parse category position in '%s'", raceRows[i])
+			}
 
 			var club []string
 
@@ -209,6 +219,19 @@ func parseResults(htmlresult []byte) (model.RaceDetails, error) {
 				md["name"] = strings.Replace(md["name"], "("+runnersClubName+")", "", 1)
 			}
 
+			if len(strings.TrimSpace(md["name"])) == 0 {
+				return model.RaceDetails{}, fmt.Errorf("Failed to find name in '%s'", raceRows[i])
+			}
+
+			if len(md["bib_number"]) == 0 {
+				return model.RaceDetails{}, fmt.Errorf("Failed to find bib number in '%s'", raceRows[i])
+			}
+
+			if len(md["category"]) == 0 {
+				return model.RaceDetails{}, fmt.Errorf("Failed to find category in ''%s'", raceRows[i])
+			}
+
+			//map is based on position.. if the same position exists twice it will be overrwriten
 			raceResultsMap[p] = model.Racer{
 				Position:            p,
 				Name:                strings.TrimSpace(md["name"]),

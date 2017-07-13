@@ -84,6 +84,10 @@ type AgeResult struct {
 	AgeCategory string
 }
 
+// ErrRecordNotFoundError is an error implementation that includes the table name
+var ErrRecordNotFoundError = errors.New("Record not found")
+var ErrNoRecordsAvailable = errors.New("No records available")
+
 func (db *Db) Migrate() {
 	db.orm.AutoMigrate(&Racer{}, &Race{}, &RaceResult{}, &AgeCategory{}, &ImportTask{}, &RaceGroup{})
 
@@ -127,32 +131,44 @@ func (db *Db) Open() error {
 	return nil
 }
 
+//CreateImportTask creates an import task and returns the new task
 func (db *Db) CreateImportTask(url string) (ImportTask, error) {
 	race := Race{Name: "Pending", ImportStatus: "pending", SrcUrl: url, Date: time.Now(), LastUpdated: time.Now()}
-	err := db.orm.Create(&race).Error
-	if err != nil {
-		log.Printf("%s", err)
+
+	if err := db.orm.Create(&race).Error; err != nil {
+		return ImportTask{}, err
 	}
 
 	task := ImportTask{RaceID: race.ID, Status: "pending", SrcUrl: url}
-	db.orm.Create(&task)
+
+	if err := db.orm.Create(&task).Error; err != nil {
+		return task, err
+	}
+
 	return task, nil
 }
 
+//FailedImport cleans up after a failed import
 func (db *Db) FailedImport(task ImportTask, err error) {
 	task.Status = "failed"
 	task.ErrorText = err.Error()
-	db.orm.Save(&task)
+	if err := db.orm.Save(&task).Error; err != nil {
+
+	}
 
 	db.orm.Delete(&Race{}, task.RaceID)
+
 	db.orm.Delete(&RaceResult{}, "race_id = ?", task.RaceID)
 
 }
 
+//CreateRaceGroup creates a new race group and returns the race group
 func (db *Db) CreateRaceGroup(name string, distance string, distanceunit string) (RaceGroup, error) {
 	etag, lastUpdated := db.CreateEtagAndLastUpdated(name)
 	raceGroup := RaceGroup{Name: name, Distance: distance, DistanceUnit: distanceunit, LastUpdated: lastUpdated, ETag: etag}
-	db.orm.Save(&raceGroup)
+	if err := db.orm.Save(&raceGroup).Error; err != nil {
+		return raceGroup, err
+	}
 	return raceGroup, nil
 }
 
@@ -179,7 +195,7 @@ func (db *Db) CreateEtagAndLastUpdated(name string) (string, time.Time) {
 func (db *Db) DeleteRaceGroup(id int) (RaceGroup, error) {
 	raceGroup := RaceGroup{}
 	if db.orm.First(&raceGroup, id).RecordNotFound() {
-		return raceGroup, errors.New("Race Group not found")
+		return raceGroup, ErrRecordNotFoundError
 	}
 
 	races, _ := db.GetRacesForRaceGroup(raceGroup.ID)
@@ -360,7 +376,7 @@ func (db *Db) GetLastUpdatedRace() (Race, error) {
 	db.orm.Order("last_updated desc").First(&race)
 
 	if race.Name == "" {
-		return race, errors.New("No race found")
+		return race, ErrNoRecordsAvailable
 	}
 
 	return race, nil
@@ -396,16 +412,20 @@ func (db *Db) GetRaces() ([]Race, error) {
 	return races, nil
 }
 
+//GetRace
 func (db *Db) GetRace(id int) (Race, error) {
 	race := Race{}
-	db.orm.First(&race, id)
+	if db.orm.First(&race, id).RecordNotFound() {
+		return race, ErrRecordNotFoundError
+	}
 	return race, nil
 }
 
+//DeleteRace
 func (db *Db) DeleteRace(id int) (Race, error) {
 	race := Race{}
 	if db.orm.First(&race, id).RecordNotFound() {
-		return race, errors.New("Race not found")
+		return race, ErrRecordNotFoundError
 	}
 
 	if err := db.orm.Delete(&race).Error; err != nil {
@@ -423,15 +443,20 @@ func (db *Db) DeleteRace(id int) (Race, error) {
 	return race, nil
 }
 
+//GetImportTask
 func (db *Db) GetImportTask(id int) (ImportTask, error) {
 	task := ImportTask{}
-	db.orm.First(&task, id)
+	if db.orm.First(&task, id).RecordNotFound() {
+		return task, ErrRecordNotFoundError
+	}
 	return task, nil
 }
 
 func (db *Db) GetRacer(id int) (Racer, error) {
 	racer := Racer{}
-	db.orm.First(&racer, id)
+	if db.orm.First(&racer, id).RecordNotFound() {
+		return racer, ErrRecordNotFoundError
+	}
 	return racer, nil
 }
 

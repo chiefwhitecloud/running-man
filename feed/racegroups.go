@@ -136,3 +136,60 @@ func (r *FeedResource) GetRaceGroup(res http.ResponseWriter, req *http.Request) 
 	SendJson(res, FormatRaceGroupForFeed(req, raceGroupDB))
 
 }
+
+func (r *FeedResource) GetRacesForRaceGroup(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 404)
+	}
+
+	races, err := r.Db.GetRacesForRaceGroup(int(raceGroupId))
+
+	if err != nil {
+		http.Error(res, err.Error(), 500)
+	}
+
+	SendJson(res, FormatRacesForFeed(req, races))
+
+}
+
+func (r *FeedResource) AddRaceToRaceGroup(res http.ResponseWriter, req *http.Request) {
+
+	vars := mux.Vars(req)
+
+	var addRaceGroup api.RaceGroupAddRace
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&addRaceGroup)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	raceId, err := strconv.Atoi(addRaceGroup.RaceId)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	race, err := r.Db.GetRace(raceId)
+
+	raceGroupId, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	raceGroup, err := r.Db.GetRaceGroup(raceGroupId)
+
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+	}
+
+	r.Db.AddRaceToRaceGroup(raceGroup, race)
+
+	SendSuccess(res)
+}

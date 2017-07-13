@@ -240,6 +240,13 @@ func (s *TestSuite) Test02ImportTely(c *C) {
 
 }
 
+// Fetch race not found
+func (s *TestSuite) Test01FetchRaceNotFound(c *C) {
+	request := gorequest.New()
+	resp, _, _ := request.Get(fmt.Sprintf("%s/feed/race/1", s.host)).End()
+	c.Assert(resp.StatusCode, Equals, 404)
+}
+
 // Import a race from 2008
 func (s *TestSuite) Test03ImportRoadRace(c *C) {
 
@@ -605,6 +612,7 @@ func (s *TestSuite) doImport(path string) (api.Race, error) {
 					return nil
 				}
 			} else if resp.StatusCode == 500 {
+				log.Print(body)
 				return errors.New("Import Failed")
 			} else {
 				return errors.New("Unknown status")
